@@ -129,14 +129,3 @@ createMarginScaleParameters <- function (file,var,above,r=consecutivebelow,cmax=
   nc_close(bs.nc)
   nc_close(as.nc)
 }
-
-
-# Construct a nc.file with the spatial GPDPARAMETERS given in parameters of the function
-gpdParametersToNcFile <- function (threshold,gamma,sigma,stderrgamma,stderrsigma,nc.file.out,grid=TRUE) {
-  # TODO
-}
-
-# Construct a nc.file which is compatible with the nc.file.in for binary operator on one of the GPDPARAMETERS
-mapGpdParametersToStorm <- function (nc.file.in) {
- # TODO  
-}

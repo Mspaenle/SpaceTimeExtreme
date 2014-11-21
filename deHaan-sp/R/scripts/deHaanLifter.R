@@ -20,16 +20,18 @@ lift <- function (Xs.1,var,t0,files.scale.parameters,grid=TRUE) {
    
    Xs.2.i <- t0 * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
    Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + bt.s
-   
-   addXs3ToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.3 = Xs.3.i, var, grid)
+   Xs.1.i <- ( transformed.Xs.1 * estim.sigma.s ) + bt.s
+     
+   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.1 = Xs.1.i, Xs.3 = Xs.3.i, var, grid)
   }
   
   return(Xs.1)
 }
 
 
-# From the original nc.file opened, copy the targeted var dimension and fill the created var by the lifted values
-addXs3ToOriginalStorm <- function (originalStorm.nc, Xs.3, var, grid) {
+# From the original storm nc.file (with Xs1 transformed var)
+# add lifted (Xs.3) and original scaled (Xs.1) time series
+addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.1, Xs.3, var, grid) {
   in.nc<-nc_open(originalStorm.nc,write = TRUE)
   units.var <- ""
   units.time <- ""
@@ -54,10 +56,14 @@ addXs3ToOriginalStorm <- function (originalStorm.nc, Xs.3, var, grid) {
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
     varlifted <- ncvar_def(paste(var,"Lifted",sep=""),units.var,list(dimX,dimY,dimTime),
                            missval=missval,prec="float",compression = 9)
+    varorigin <- ncvar_def(paste(var,"Origin",sep=""),units.var,list(dimX,dimY,dimTime),
+                           missval=missval,prec="float",compression = 9)
     ncvar_add(in.nc,varlifted)
+    ncvar_add(in.nc,varorigin)
     nc_close(in.nc)
     in.nc<-nc_open(originalStorm.nc,write=TRUE)
     ncvar_put(in.nc,varid = paste(var,"Lifted",sep=""),vals = Xs.3,start=c(1,1,1),count=c(-1,-1,-1),verbose = TRUE)
+    ncvar_put(in.nc,varid = paste(var,"Origin",sep=""),vals = Xs.1,start=c(1,1,1),count=c(-1,-1,-1),verbose = TRUE)
     nc_close(in.nc)
   } else {
     node<-ncvar_get(in.nc,"node")
@@ -66,10 +72,14 @@ addXs3ToOriginalStorm <- function (originalStorm.nc, Xs.3, var, grid) {
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
     varlifted <- ncvar_def(paste(var,"Lifted",sep=""),units.var,list(dimNode,dimTime),
                            missval=missval,prec="float",compression = 9)
+    varorigin <- ncvar_def(paste(var,"Origin",sep=""),units.var,list(dimNode,dimTime),
+                           missval=missval,prec="float",compression = 9)
     ncvar_add(in.nc,varlifted)
+    ncvar_add(in.nc,varorigin)
     nc_close(in.nc)
     in.nc<-nc_open(originalStorm.nc,write=TRUE)
     ncvar_put(in.nc,varid = paste(var,"Lifted",sep=""),vals = Xs.3,start=c(1,1),count=c(-1,-1))
+    ncvar_put(in.nc,varid = paste(var,"Origin",sep=""),vals = Xs.1,start=c(1,1),count=c(-1,-1))
     nc_close(in.nc)
   }
 }
