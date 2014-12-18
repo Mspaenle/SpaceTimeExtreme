@@ -19,6 +19,8 @@ lift <- function (Xs.1,var,t0,files.scale.parameters,grid=TRUE) {
    nc_close(transformed.Xs.1.nc)
    
    Xs.2.i <- t0 * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
+   # OPTIONS TRANSFORMATION EMPIRIQUE: 
+   # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
    Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + bt.s
    Xs.1.i <- ( transformed.Xs.1 * estim.sigma.s ) + bt.s
      
