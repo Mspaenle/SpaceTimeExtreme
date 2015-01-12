@@ -16,37 +16,37 @@ workdir <- properties["workdir"]
 # NETCDF INPUTS FILES #
 #######################
 indir <- paste(workdir,properties["indir"],sep="/")
-file <- paste(indir,properties["file"],sep="/")
-grid <- as.logical(properties["grid"])
-var <- as.character(properties["var"])
-covar <- as.character(properties["covar"])
+env.file <- paste(indir,properties["file"],sep="/")
+env.grid <- as.logical(properties["grid"])
+env.var <- as.character(properties["var"])
+env.covar <- as.character(properties["covar"])
 
 # DEBUG MODE #
 ##############
-restart.marginsfit <- as.logical(properties["restart.marginsfit"])
+env.restart.marginsfit <- as.logical(properties["restart.marginsfit"])
 hasDeclusteredStorm <- as.logical(properties["hasDeclusteredStorm"])
 
 # MODEL PARAMETRISATION #
 #########################
-p <- as.numeric(properties["p"]) #t<-100; p<-1/t # Above every "nobs" observations => timeseries * 1/nobs => t=nobs
-obsperyear <- as.numeric(properties["margin.observation.per.year"])
+env.p <- as.numeric(properties["p"]) #t<-100; p<-1/t # Above every "nobs" observations => timeseries * 1/nobs => t=nobs
+env.obsperyear <- as.numeric(properties["margin.observation.per.year"])
 
-cmax <- as.logical(properties["cmax"]) # allow decluster when GPD (margins) fitting
-consecutivebelow <- as.integer(properties["consecutivebelow"])
+env.cmax <- as.logical(properties["cmax"]) # allow decluster when GPD (margins) fitting
+env.consecutivebelow <- as.integer(properties["consecutivebelow"])
 
-margin.transformation.mode <- as.integer(properties["margin.transformation.mode"])
+env.margin.transformation.mode <- as.integer(properties["margin.transformation.mode"])
 
-ref.t0 <- NULL
-if (grid) {
+env.ref.t0 <- NULL
+if (env.grid) {
   if (is.na(as.numeric(properties["t0.ref.lon"])) ||  is.na(as.numeric(properties["t0.ref.lat"]))) stop("if gridded Properties: 't0.ref.lon' and 't0.ref.lat' cannot be NULL")
-  ref.t0 <- c(as.numeric(properties["t0.ref.lon"]),as.numeric(properties["t0.ref.lat"]))
+  env.ref.t0 <- c(as.numeric(properties["t0.ref.lon"]),as.numeric(properties["t0.ref.lat"]))
 } else {
   if (is.na(as.numeric(properties["t0.ref.node"]))) stop("if not gridded Property: 't0.ref.node' cannot be NULL")
-  ref.t0 <- c(as.numeric(properties["t0.ref.node"]))
+  env.ref.t0 <- c(as.numeric(properties["t0.ref.node"]))
 }
 
-t0.mode <- as.integer(properties["t0.mode"])
-m.returnperiod <- as.integer(properties["m.returnperiod"])
+env.t0.mode <- as.integer(properties["t0.mode"])
+env.m.returnperiod <- as.integer(properties["m.returnperiod"])
 
 has.fixed.reference <- as.logical(properties["has.fixed.reference"])
 has.hyperslab.reference <- as.logical(properties["has.hyperslab.reference"])
@@ -56,7 +56,7 @@ ref.hyperslab <- NULL
 if (has.fixed.reference & has.hyperslab.reference) {
   stop ("'has.fixed.reference' and 'has.hyperslab.reference' cannot be true in the same time!")
 } else if (has.fixed.reference) {
-  if (grid) {
+  if (env.grid) {
     if (is.na(as.numeric(properties["ref.lon"])) ||  is.na(as.numeric(properties["ref.lat"]))) stop("if gridded Properties: 'ref.lon' and 'ref.lat' cannot be NULL")
     ref <- c(as.numeric(properties["ref.lon"]),as.numeric(properties["ref.lat"]))
   } else {
@@ -68,3 +68,6 @@ if (has.fixed.reference & has.hyperslab.reference) {
   ref.hyperslab <- read.csv2(file=paste(workdir,file.hyperslab.reference,sep="/"),header = TRUE)
 }
 
+
+env.delta <- as.numeric(properties["delta.between.storm"])
+env.nbrstorms <- as.numeric(properties["nbr.storms"])
