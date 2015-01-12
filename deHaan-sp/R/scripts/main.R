@@ -56,22 +56,22 @@ file.in <- paste(getwd(),"../../inputs/normalised/file.nc",sep = "/")
 
 if (!env.restart.marginsfit) {
   print("Construct Margins GPD parameters")
-  createMarginScaleParameters(env.file, env.var, above, 
-                              r=env.consecutivebelow, cmax=env.cmax, 
-                              files.scale.parameters, grid=env.grid, mode=env.margin.transformation.mode)
-  stop("that's all folks !")
+#   createMarginScaleParameters(env.file, env.var, above, 
+#                               r=env.consecutivebelow, cmax=env.cmax, 
+#                               files.scale.parameters, grid=env.grid, mode=env.margin.transformation.mode)
   print("Normalize")
-  normalizeMargins(env.file, files.scale.parameters, 
-                   file.in, mode=env.margin.transformation.mode)
+  normalizeMargins(env.file, files.scale.parameters, file.in)
 } 
-stop("that's all folks !")
+
+#  mode = env.margin.transformation.mode
 
 # Actual declustering. Will manage ref.location whether ref.location is set or not
 print("Decluster")
 if (!hasDeclusteredStorm) {
-  Xs.1 <- decluster(var,file.in,k=nbrstorms,threshold=b.t, 
-                    delta=env.delta, index.ref.location = ref,grid = env.grid, 
-                    outputDir = "../../outputs")  
+  Xs.1 <- decluster(env.var,file.in,k=env.nbrstorms,threshold=b.t, 
+                    delta=env.delta, index.ref.location = ref.fixed, grid = env.grid, 
+                    outputDir = "../../outputs")    
+    
 } else {
   p <- "../../outputs"; p <- paste(p,dir(p),sep="/")
   Xs.1 <- list()
@@ -85,4 +85,4 @@ if (!hasDeclusteredStorm) {
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
 source("deHaanLifter.R")
-Xs.3 <- lift(Xs.1,var,t0,files.scale.parameters,grid=TRUE)
+Xs.3 <- lift(Xs.1,env.var,t0,files.scale.parameters,grid=env.grid)

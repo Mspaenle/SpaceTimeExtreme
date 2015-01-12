@@ -15,16 +15,15 @@ require(ncdf4)
 # - DELTAR is the length (in unit of time step of date dimension) of observations to remove from each side of a storm to
 # assure the independence of storms.
 # - VAR is variable of interest in nc file
-# - INDEX.REF.LOCATION (*) is the (possible) indexes of reference location.
+# - INDEX.REF.LOCATION (*) is the (possible) index or Hyperslab of reference location.
 # - OUTPUTDIR is the output dir to store the ncfiles containing storms
 #
-# (*) NOT YET IMPLEMENTED
 #
 # The result is a list of files representing the selected storms
 #
 # FAIRE DES ZONES avec les HYPERSLAB POUR TROUVER LES PICS
 #
-decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta=delta, index.ref.location = NULL,grid=TRUE,outputDir="../../outputs") {
+decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta=delta, index.ref.location = NULL, grid=TRUE, outputDir="../../outputs") {
   if (is.null(k)) storms.tot <- 9999 else storms.tot <- k;
   if (rdelta < delta) warning("choose a Rdelta lower than Delta may results to inconsistent independant storms !")
   
@@ -45,6 +44,7 @@ decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta=delta, ind
     
     hyperslab.remaining.peak <- getHyperslabRemaining(hyperslab.remaining.peak,hyperslab.storm,rdelta)
     hasDataAbove <- hasDataAbove(file.in,threshold,var,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid)
+    
   }
   if (!hasDataAbove & storms.tot > 0) warning ("there were no more data above ! please consider an other threshold")
   return(storms)
@@ -96,7 +96,7 @@ initHyperslabRemaining <- function (file.in) {
 }
 
 # Returns a file with marginal values normalized from their local thresholds and scale paremeters from GPD fits
-normalizeMargins <- function (file,files.scale.parameters,file.in) {
+normalizeMargins <- function (file, files.scale.parameters, file.in) {
   tmp.char<-"/tmp/tmpscale.nc"
   system(command = paste(env,"ncbo -4 -O --op_typ=sbt",file,files.scale.parameters[1],tmp.char))
   system(command = paste(env,"ncbo -4 -O --op_typ=mlt",tmp.char,files.scale.parameters[2],file.in)) # multiply by the reverse 1/a(s)
@@ -106,6 +106,7 @@ normalizeMargins <- function (file,files.scale.parameters,file.in) {
 getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, hyperslab.remaining = "") {
   tmp.remain <- "/tmp/tmpremain.nc"
   tmp.char <- "/tmp/tmpgetmax.nc"
+  hyperslab <- NULL
   if (grid) {
     if (!is.null(index.ref.location)) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") # else data has been normalised to their local thresholds.
     system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
@@ -124,11 +125,13 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
 
 # Aims to determine whether or not there are still data above the THRESHOLD in the dataset of the FILE.
 # The function only look at index.ref.location timeseries if it is set.
-hasDataAbove <- function (file, threshold, var, hyperslab.remaining ,index.ref.location=NULL,grid=TRUE) {
+hasDataAbove <- function (file, threshold, var, hyperslab.remaining , index.ref.location = NULL, grid=TRUE) {
   tmp.char <- "/tmp/tmpmaxisabove.nc"
   if (!is.null(index.ref.location)) { 
     if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
     else hyperslab <- paste("-d node,",index.ref.location[1],sep="")
+  } else {
+    hyperslab <- NULL
   }
   test <- 0
   system(command = paste(env,"ncwa -4 -O -b -y max -v",var,hyperslab.remaining,hyperslab,file,tmp.char))

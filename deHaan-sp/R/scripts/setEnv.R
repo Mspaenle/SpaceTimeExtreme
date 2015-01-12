@@ -1,7 +1,7 @@
 # Clean any temp files #
-if (length(system("ls /tmp/tmp*.nc",intern=TRUE)) > 0) {
-  system(command = "rm /tmp/tmp*.nc") #Clean temporary data#  
-}
+#if (length(system("ls /tmp/tmp*.nc",intern=TRUE)) > 0) {
+#  system(command = "rm /tmp/tmp*.nc") #Clean temporary data#  
+#}
 
 # Read Properties #
 properties <- read.table("main.properties", header=FALSE, sep="=", row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE)
@@ -58,16 +58,15 @@ if (has.fixed.reference & has.hyperslab.reference) {
 } else if (has.fixed.reference) {
   if (env.grid) {
     if (is.na(as.numeric(properties["ref.lon"])) ||  is.na(as.numeric(properties["ref.lat"]))) stop("if gridded Properties: 'ref.lon' and 'ref.lat' cannot be NULL")
-    ref <- c(as.numeric(properties["ref.lon"]),as.numeric(properties["ref.lat"]))
+    ref.fixed <- c(as.numeric(properties["ref.lon"]),as.numeric(properties["ref.lat"]))
   } else {
     if (is.na(as.numeric(properties["ref.node"]))) stop("if not gridded Property: 'ref.node' cannot be NULL")
-    ref <- c(as.numeric(properties["ref.node"]))
+    ref.fixed <- c(as.numeric(properties["ref.node"]))
   }
 } else if (has.hyperslab.reference) {
   file.hyperslab.reference <- properties["file.hyperslab.reference"]
   ref.hyperslab <- read.csv2(file=paste(workdir,file.hyperslab.reference,sep="/"),header = TRUE)
 }
-
 
 env.delta <- as.numeric(properties["delta.between.storm"])
 env.nbrstorms <- as.numeric(properties["nbr.storms"])
