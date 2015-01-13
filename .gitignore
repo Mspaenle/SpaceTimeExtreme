@@ -57,3 +57,5 @@ Thumbs.db
 *.png
 *.graffle
 *.Rproj.user
+*.tmp
+.Rproj.user

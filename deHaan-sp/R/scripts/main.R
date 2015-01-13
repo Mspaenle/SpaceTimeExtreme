@@ -20,43 +20,43 @@ source("marginGPDFit.R")
 above <- length(Xs.ref$var) * env.p
 paramsXsPOT<-margfit(Xs.ref$var, above, r=env.consecutivebelow, cmax=env.cmax)
 
-
 #------------------------------------------------------------------------------#
 # 4/ Decluster data to obtain X^1(s) storms
 source("decluster.R")
 source("marginGPDFit.R")
 
-# gridded and any locations to detect storms
-bs.file <- paste(getwd(),"../../inputs/normalised/tmpbs.nc",sep="/")
-# bs.file will contain all GPD Margin Fit parameters
-as.file <- paste(getwd(),"../../inputs/normalised/tmpas.nc",sep="/") 
-files.scale.parameters <- c(bs.file,as.file)
-file.in <- paste(getwd(),"../../inputs/normalised/file.nc",sep = "/")
-
 if (!env.restart.marginsfit) {
   print("Construct Margins GPD parameters")
-#   createMarginScaleParameters(env.file, env.var, above, 
-#                               r=env.consecutivebelow, cmax=env.cmax, 
-#                               files.scale.parameters, grid=env.grid, mode=env.margin.transformation.mode)
+  createMarginScaleParameters(env.file, env.var, above, 
+                              r=env.consecutivebelow, cmax=env.cmax, 
+                              files.scale.parameters, grid=env.grid, mode=env.margin.transformation.mode)
   print("Normalize")
   normalizeMargins(env.file, files.scale.parameters, file.in)
 } 
 
 #  mode = env.margin.transformation.mode
 
-# Declustering. Will manage ref.location whether ref.fixed or ref.hyperslab is set or not
+# Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")
 if (!hasDeclusteredStorm) {
-  Xs.1 <- decluster(env.var,file.in,k=env.nbrstorms,threshold=b.t, 
-                    delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
-                    outputDir = "../../outputs")
+  if (!has.hyperslab.reference) {
+    Xs.1 <- decluster(env.var,file.in,k=env.nbrstorms,threshold=b.t, 
+                      delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
+                      outputDir = env.outdir)  
+  } else {
+    Xs.1 <- decluster(env.var,file.in,k=env.nbrstorms,threshold=b.t, 
+                      delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.hyperslab, grid = env.grid, 
+                      outputDir = env.outdir)  
+  }
 } else {
-  p <- "../../outputs"; p <- paste(p,dir(p),sep="/")
+  p <- env.outdir; p <- paste(p,dir(p),sep="/")
   Xs.1 <- list()
   for (i in 1:length(p)) {
     Xs.1 <- c(Xs.1,p[i])
   }
 }
+
+stop("debug")
 
 #------------------------------------------------------------------------------#
 source("deHaanLifter.R")
@@ -66,28 +66,6 @@ source("deHaanLifter.R")
 t0.i <- computetzeroi(Xs.1,env.var,env.t0.mode,paramsXsPOT,
                       env.consecutivebelow,env.obsperyear,
                       env.m.returnperiod,env.cmax,env.ref.t0,env.grid)
-
-# 
-# t0 <- NULL;
-# if (env.t0.mode == 1) {
-#   # Uplift to a targeted threshold
-#   gamma <- paramsXsPOT$shape
-#   a <- paramsXsPOT$scale
-#   b.t <- as.numeric(paramsXsPOT$threshold)
-#   m.rlevel <- fpot(Xs.ref$var, threshold = b.t, r = env.consecutivebelow,
-#                    npp = env.obsperyear, mper = env.m.returnperiod,
-#                    cmax=env.cmax)$estimate['rlevel']
-#   b.tt0 <- as.numeric(m.rlevel) 
-#   #rlevel<- b.t+(a/gamma)*((p*obsperyear*m.returnperiod)^gamma-1) ;
-#   #print(rlevel,b.tt0)
-#   t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
-#   t0.i <- rep(t0,length(Xs.1))
-# } else if (env.t0.mode == 2) {
-#   # Find t0i to have in each storm cluster the largest within-maxima equal to
-#   # the return level corresponding to env.returnperiod
-#   t0.i <- computetzeroi(Xs.1,env.t0.mode,paramsXsPOT,env.consecutivebelow,env.obsperyear,env.m.returnperiod,env.cmax)
-# }
-
 
 
 #------------------------------------------------------------------------------#

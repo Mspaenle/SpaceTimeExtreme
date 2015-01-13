@@ -13,13 +13,22 @@ properties <- setNames(properties[,1],row.names(properties))
 env <- properties["env"] # to have local commands like ncks (nco)
 workdir <- properties["workdir"]
 
-# NETCDF INPUTS FILES #
+# NETCDF FILES #
 #######################
 indir <- paste(workdir,properties["indir"],sep="/")
 env.file <- paste(indir,properties["file"],sep="/")
 env.grid <- as.logical(properties["grid"])
 env.var <- as.character(properties["var"])
 env.covar <- as.character(properties["covar"])
+env.outdir <- paste(workdir,properties["outdir"],sep="/")
+
+env.tmp.bs <- paste(workdir,properties["tmpbs"],sep="/")
+env.tmp.as <- paste(workdir,properties["tmpas"],sep="/")
+env.tmpnormalized.file <- paste(workdir,properties["tmpnormalized"],sep="/")
+bs.file <- env.tmp.bs# bs.file will contain all GPD Margin Fit parameters
+as.file <- env.tmp.as
+files.scale.parameters <- c(bs.file,as.file)
+file.in <- env.tmpnormalized.file # normalized data
 
 # DEBUG MODE #
 ##############
