@@ -68,5 +68,6 @@ if (has.fixed.reference & has.hyperslab.reference) {
   ref.hyperslab <- read.csv2(file=paste(workdir,file.hyperslab.reference,sep="/"),header = TRUE)
 }
 
-env.delta <- as.numeric(properties["delta.between.storm"])
+env.delta <- as.numeric(properties["delta.storm"])
+env.rdelta <- as.numeric(properties["rdelta.storm"])
 env.nbrstorms <- as.numeric(properties["nbr.storms"])

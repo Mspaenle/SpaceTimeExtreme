@@ -23,7 +23,7 @@ require(ncdf4)
 #
 # FAIRE DES ZONES avec les HYPERSLAB POUR TROUVER LES PICS
 #
-decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta=delta, index.ref.location = NULL, grid=TRUE, outputDir="../../outputs") {
+decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta, index.ref.location = NULL, grid=TRUE, outputDir="../../outputs") {
   if (is.null(k)) storms.tot <- 9999 else storms.tot <- k;
   if (rdelta < delta) warning("choose a Rdelta lower than Delta may results to inconsistent independant storms !")
   

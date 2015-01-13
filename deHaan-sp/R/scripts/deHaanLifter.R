@@ -1,7 +1,7 @@
 require(ncdf4)
 
 # Return a list of files with uplifted storms
-lift <- function (Xs.1,var,t0,files.scale.parameters,grid=TRUE) {
+lift <- function (Xs.1,var,t0.i,files.scale.parameters,grid=TRUE) {
   nc <- nc_open(unlist(Xs.1[1]))
   times <- nc$dim$time$len
   nc_close(nc)
@@ -18,7 +18,7 @@ lift <- function (Xs.1,var,t0,files.scale.parameters,grid=TRUE) {
    transformed.Xs.1 <- as.vector(ncvar_get(nc = transformed.Xs.1.nc,var))
    nc_close(transformed.Xs.1.nc)
    
-   Xs.2.i <- t0 * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
+   Xs.2.i <- t0.i[i] * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
    # OPTIONS TRANSFORMATION EMPIRIQUE: 
    # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
    Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + bt.s
@@ -84,4 +84,57 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.1, Xs.3, var, grid) {
     ncvar_put(in.nc,varid = paste(var,"Origin",sep=""),vals = Xs.1,start=c(1,1),count=c(-1,-1))
     nc_close(in.nc)
   }
+}
+
+
+# Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
+# 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
+# 2 = the within-cluster maxima at reference station reach the targeted ym return value
+# Return values in a vector
+computetzeroi <- function(Xs.1,var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, grid) {
+  t0.i <- NULL
+  gamma <- paramsXsPOT$shape
+  a <- paramsXsPOT$scale
+  b.t <- as.numeric(paramsXsPOT$threshold)
+  m.rlevel <- fpot(Xs.ref$var, threshold = b.t, r = consecutivebelow,
+                   npp = obsperyear, mper = m.returnperiod,
+                   cmax=cmax)$estimate['rlevel']
+  if (t0.mode == 1) {
+    # Uplift to a targeted threshold b.tt0
+    b.tt0 <- as.numeric(m.rlevel) 
+    #rlevel<- b.t+(a/gamma)*((p*obsperyear*m.returnperiod)^gamma-1) ;
+    #print(rlevel,b.tt0)
+    t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
+    t0.i <- rep(t0,length(Xs.1))
+  } else if (t0.mode == 2) {
+    # Find t0i to have in each storm cluster the largest within-maxima equal to
+    # the return level corresponding to env.returnperiod
+    t0.i <- NULL
+    t0 <- NULL
+    for (i in 1:length(Xs.1)) {
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = ref.t0, grid = grid)
+      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      t0.i <- c(t0.i,t0)
+    }
+  }
+  if (is.null(t0.i)) stop("t0.i vector is null, error in computetzeroi function")
+  
+  return(t0.i)
+}
+
+
+# Return max of a file
+ncdfmax <- function (file, var, index.ref.location = NULL, grid=TRUE) {
+  tmp.char <- "/tmp/tmpmax.nc"
+  if (!is.null(index.ref.location)) { 
+    if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
+    else hyperslab <- paste("-d node,",index.ref.location[1],sep="")
+  }
+  test <- 0
+  system(command = paste(env,"ncwa -4 -O -b -y max -v",var,hyperslab,file,tmp.char))
+  tmp.nc<-nc_open(tmp.char)
+  max<-ncvar_get(tmp.nc,var)
+  nc_close(tmp.nc)
+  
+  return(max)
 }

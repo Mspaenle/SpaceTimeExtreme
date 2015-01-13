@@ -14,33 +14,12 @@ print("Extract Ref Location Timeserie")
 Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=TRUE)
 
 #------------------------------------------------------------------------------#
-# 2/ GPD fit and store marginal results
+# 2/ GPD fit at reference station and store marginal results
 print("Reference location GPD Fit")
 source("marginGPDFit.R")
 above <- length(Xs.ref$var) * env.p
 paramsXsPOT<-margfit(Xs.ref$var, above, r=env.consecutivebelow, cmax=env.cmax)
 
-#------------------------------------------------------------------------------#
-# 3/ Determine t0 s.t. such that 1/t*t0 will be the targeted probability of the
-# return level b.tt0
-t0 <- NULL;
-if (env.t0.mode == 1) {
-  # Uplift to a targeted threshold
-  gamma <- paramsXsPOT$shape
-  a <- paramsXsPOT$scale
-  b.t <- as.numeric(paramsXsPOT$threshold)
-  m.rlevel <- fpot(Xs.ref$var, threshold = b.t, r = env.consecutivebelow,
-                   npp = env.obsperyear, mper = env.m.returnperiod,
-                   cmax=env.cmax)$estimate['rlevel']
-  b.tt0 <- as.numeric(m.rlevel) 
-  #rlevel<- b.t+(a/gamma)*((p*obsperyear*m.returnperiod)^gamma-1) ;
-  #print(rlevel,b.tt0)
-  t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
-  
-} else if (env.t0.mode == 2) {
-  # Find t0i to have in each storm cluster the largest within-maxima equal to
-  # the return level corresponding to env.returnperiod
-}
 
 #------------------------------------------------------------------------------#
 # 4/ Decluster data to obtain X^1(s) storms
@@ -65,13 +44,12 @@ if (!env.restart.marginsfit) {
 
 #  mode = env.margin.transformation.mode
 
-# Actual declustering. Will manage ref.location whether ref.location is set or not
+# Declustering. Will manage ref.location whether ref.fixed or ref.hyperslab is set or not
 print("Decluster")
 if (!hasDeclusteredStorm) {
   Xs.1 <- decluster(env.var,file.in,k=env.nbrstorms,threshold=b.t, 
-                    delta=env.delta, index.ref.location = ref.fixed, grid = env.grid, 
-                    outputDir = "../../outputs")    
-    
+                    delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
+                    outputDir = "../../outputs")
 } else {
   p <- "../../outputs"; p <- paste(p,dir(p),sep="/")
   Xs.1 <- list()
@@ -81,8 +59,39 @@ if (!hasDeclusteredStorm) {
 }
 
 #------------------------------------------------------------------------------#
+source("deHaanLifter.R")
+# 3/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
+# 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
+# 2 = the within-cluster maxima at reference station reach the targeted ym return value
+t0.i <- computetzeroi(Xs.1,env.var,env.t0.mode,paramsXsPOT,
+                      env.consecutivebelow,env.obsperyear,
+                      env.m.returnperiod,env.cmax,env.ref.t0,env.grid)
+
+# 
+# t0 <- NULL;
+# if (env.t0.mode == 1) {
+#   # Uplift to a targeted threshold
+#   gamma <- paramsXsPOT$shape
+#   a <- paramsXsPOT$scale
+#   b.t <- as.numeric(paramsXsPOT$threshold)
+#   m.rlevel <- fpot(Xs.ref$var, threshold = b.t, r = env.consecutivebelow,
+#                    npp = env.obsperyear, mper = env.m.returnperiod,
+#                    cmax=env.cmax)$estimate['rlevel']
+#   b.tt0 <- as.numeric(m.rlevel) 
+#   #rlevel<- b.t+(a/gamma)*((p*obsperyear*m.returnperiod)^gamma-1) ;
+#   #print(rlevel,b.tt0)
+#   t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
+#   t0.i <- rep(t0,length(Xs.1))
+# } else if (env.t0.mode == 2) {
+#   # Find t0i to have in each storm cluster the largest within-maxima equal to
+#   # the return level corresponding to env.returnperiod
+#   t0.i <- computetzeroi(Xs.1,env.t0.mode,paramsXsPOT,env.consecutivebelow,env.obsperyear,env.m.returnperiod,env.cmax)
+# }
+
+
+
+#------------------------------------------------------------------------------#
 # 5/ Transform X^1(s) to X^2(s) using t0
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
-source("deHaanLifter.R")
-Xs.3 <- lift(Xs.1,env.var,t0,files.scale.parameters,grid=env.grid)
+Xs.3 <- lift(Xs.1,env.var,t0.i,files.scale.parameters,grid=env.grid)
