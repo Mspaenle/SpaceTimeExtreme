@@ -30,8 +30,9 @@ export PATH=/Users/rchailan/Applications/cdo/1.6.5.1/bin:$PATH
 
 ## NCO ##
 #export PATH=/Users/rchailan/Applications/nco/4.4.4/bin:$PATH
-export PATH=/Users/rchailan/Applications/nco/4.4.6/bin:$PATH
+#export PATH=/Users/rchailan/Applications/nco/4.4.6/bin:$PATH
 #export PATH=/Users/rchailan/Applications/nco/4.4.6_2/bin:$PATH
+export PATH=/Users/rchailan/Applications/nco/unstable/bin:$PATH
 
 ## Netcdf ##
 #4.1.3 fortran
@@ -42,23 +43,3 @@ export PATH=/Users/rchailan/Applications/netcdf-c/4.3.2/bin:/Users/rchailan/Appl
 
 ## GMT ##
 export PATH=/Users/rchailan/Applications/GMT-5.1.1.app/Contents/Resources/bin:$PATH
-
-## PLAY ##
-#export PATH=~/Applications/play-2.1.3:$PATH
-
-## Polymesh ##
-#export PATH=/Users/rchailan/Applications/polymesh_v2p1/bin:$PATH
-
-## Other ##
-export MACMINI=82.238.91.177
-export GLADYSMOBILE=162.38.143.113
-export MIRMIDONGM=162.38.164.50
-
-#GNU COMP#
-export PATH=/usr/local/bin:$PATH
-
-# added by Anaconda 2.1.0 installer
-export PATH="/Users/rchailan/Applications/Anaconda/anaconda/bin:$PATH"
-
-#Valgrind#
-export PATH=$PATH:~/Applications/valgrind/3.10.0/bin

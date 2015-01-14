@@ -56,8 +56,6 @@ if (!hasDeclusteredStorm) {
   }
 }
 
-stop("debug")
-
 #------------------------------------------------------------------------------#
 source("deHaanLifter.R")
 # 3/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
