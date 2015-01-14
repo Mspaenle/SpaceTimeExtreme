@@ -59,3 +59,11 @@ Thumbs.db
 *.Rproj.user
 *.tmp
 .Rproj.user
+
+
+# LATEX #
+#########
+*.aux
+*.fdb_latexmk
+Documentation/spacetime.out
+*.pdf
