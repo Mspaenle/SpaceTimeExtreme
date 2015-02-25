@@ -6,10 +6,10 @@ require(ncdf4)
 # - Include into this storm any observation "+/- delta" from "t" reference
 # - Optionnally remove from timeseries any observation "+/- rdelta" from the formed storm
 #
-# - file is the original ncfile of the whole grid.
+# - FILE.ORIGIN origin file to extract storm
 # - K is the number of cluster the user want to extract, default is NULL and means every cluster available.
 # - THRESHOLD is the threshold to define exceedances.
-# - FILES.SCALE.PARAMETERS is path to two ncfiles lying in dimensions of the original files and allowing to rescale values 
+# - FILE.TMPFITINFO is path to a file containing the normalized.
 # regarding their local fits through NCBO binary op. (see NCO). It is used when max are searched at any locations of the area.
 # - DELTA is the length (in unit of time step of date dimension) of a storm.
 # - DELTAR is the length (in unit of time step of date dimension) of observations to remove from each side of a storm to
@@ -22,46 +22,58 @@ require(ncdf4)
 # The result is a list of files representing the selected storms
 #
 #
-decluster <- function (var,file.in,k=NULL,threshold=NULL,delta,rdelta, index.ref.location = NULL, grid=TRUE, outputDir="../../outputs") {
+decluster <- function (var,
+                       file.origin, # origin file
+                       file.tmpfitinfo, # file containing marginal gpd fits info + transformed data
+                       k=NULL,
+                       threshold=NULL,
+                       delta,
+                       rdelta,
+                       index.ref.location = NULL,
+                       grid=TRUE,
+                       outputDir="../../outputs") {
   if (is.null(k)) storms.tot <- 9999 else storms.tot <- k;
   if (rdelta < delta) warning("choose a Rdelta lower than Delta may results to inconsistent independant storms !")
   
   storms <- list()
-  
-  hyperslab.remaining.peak <- initHyperslabRemaining(file.in)
+  varnorm <- paste(var,"_normalized",sep="")
+  hyperslab.remaining.peak <- initHyperslabRemaining(file.tmpfitinfo)
   
   files.hyperslabs <- NULL
+  
   if (has.hyperslab.reference){
-    files.hyperslabs <- createhyperslabsfiles(file.in,var,index.ref.location)
+    files.hyperslabs <- createhyperslabsfiles(file.tmpfitinfo,varnorm,index.ref.location)
   }  
   
-  hasDataAbove <- hasDataAbove(file.in,threshold,var,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
-  k <- 0
-  print(paste("(Decluster Storm) Completion:",k,"on",storms.tot))
+  hasDataAbove <- hasDataAbove(file.tmpfitinfo,threshold,varnorm,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
+  j <- 0
+  print(paste("(Decluster Storm) Completion:",j,"on targeted",storms.tot, "storm(s)"))
+  hyperslab.storms <- NULL 
   while (storms.tot > 0 & hasDataAbove) {
     
-    
-    t.max <- getMaxTimeValue(var,file.in,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs)
+    t.max <- getMaxTimeValue(varnorm,file.tmpfitinfo,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs)
     hyperslab.storm <- data.frame(start = t.max-delta, end = t.max+delta)
+    if (hasTimeOverflows(hyperslab.storms,hyperslab.storm)) warning(paste("Storm",j,"has a time overflow regarding selected storms."))
+    hyperslab.storms <- rbind(hyperslab.storms,hyperslab.storm)
     
-    storm <- extractStorm(file.in,hyperslabToString(hyperslab.storm),grid,outputDir)
+    storm <- extractStorm(file.origin,hyperslabToString(hyperslab.storm),grid,outputDir,j)
     storms <- c(storms,storm)
-    storms.tot <- storms.tot - 1
     
     hyperslab.remaining.peak <- getHyperslabRemaining(hyperslab.remaining.peak,hyperslab.storm,rdelta)
-    hasDataAbove <- hasDataAbove(file.in,threshold,var,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
+    hasDataAbove <- hasDataAbove(file.tmpfitinfo,threshold,varnorm,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
     
-    k <- k+1
-    print(paste("(Decluster Storm) Completion:",k,"on",storms.tot))
+    j <- j+1
+    print(paste("(Decluster Storm) Completion:",j,"on targeted",k,"storm(s)"))
+    storms.tot <- storms.tot - 1
   }
+  str(hyperslab.storms)
   if (!hasDataAbove & storms.tot > 0) warning ("there were no more data above ! please consider an other threshold")
   return(storms)
 }
 
 # Returns ncfile of the selected storm (within hyperslab.storm.string)
-extractStorm <- function (file,hyperslab.storm.string,grid,outputDir) {
-  seed <- floor(runif(1, min=0, max=10001))
-  storm.nc <- paste(outputDir,"/storm-",seed,".nc",sep="")
+extractStorm <- function (file,hyperslab.storm.string,grid,outputDir,k) {
+  storm.nc <- paste(outputDir,"/storm-",k,".nc",sep="")
   system(command = paste(env,"ncks -4 -O",hyperslab.storm.string,file,storm.nc))
   return(storm.nc)
 }
@@ -95,44 +107,19 @@ hyperslabToString <- function (hyperslab) {
   return(hyperslab.string)
 }
 
-# Convert a dataframe with 4 columns start/end to an Hyperslab string for NCO
-hyperslabToString <- function (hyperslab) {
-  hyperslab.string <- ""
-  for (i in 1:nrow(hyperslab)) {
-    min<-sprintf("%.11f",hyperslab[i,1])
-    max<-sprintf("%.11f",hyperslab[i,2])
-    hyperslab.string <- paste(hyperslab.string," -d time,",min,",",max,sep="")
-  }
-  return(hyperslab.string)
-}
-
-# Returns a dataframe with original first time and last tim of the present nc file
-initHyperslabRemaining <- function (file.in) {
-  nc.in <- nc_open(file.in,readunlim = FALSE)
-  times <- ncvar_get(nc.in,"time")
-  nc_close(nc.in)
-  return( data.frame(start=times[1],end=times[length(times)]) )
-}
-
-# Returns a file with marginal values normalized from their local thresholds and scale paremeters from GPD fits
-normalizeMargins <- function (file, files.scale.parameters, file.in) {
-  tmp.char<-"/tmp/tmpscale.nc"
-  system(command = paste(env,"ncbo -4 -O --op_typ=sbt",file,files.scale.parameters[1],tmp.char))
-  system(command = paste(env,"ncbo -4 -O --op_typ=mlt",tmp.char,files.scale.parameters[2],file.in)) # multiply by the reverse 1/a(s)
-}
-
 # Aims to find the time index of the max value contained into a file within the hyperslab.remaining
 getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, hyperslab.remaining = "", files.hyperslabs=NULL) {
-  tmp.remain <- "/tmp/tmpremain.nc"
-  tmp.char <- "/tmp/tmpgetmax.nc"
+  tmp.remain <- paste(workdirtmp,"/tmpremain.nc",sep="") 
+  tmp.char <- paste(workdirtmp,"/tmpgetmax.nc",sep="") 
+  
   hyperslab <- max <- tmax <- NULL
   if (is.null(files.hyperslabs)) {
     if (grid) {
-      if (!is.null(index.ref.location)) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") # else data has been normalised to their local thresholds.
+      if (!is.null(index.ref.location)) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="")
       system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
       system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$longitude,$latitude]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
     } else {
-      if (!is.null(index.ref.location)) hyperslab <- paste("-d node,",index.ref.location[1],sep="") # else data has been normalised to their local thresholds.
+      if (!is.null(index.ref.location)) hyperslab <- paste("-d node,",index.ref.location[1],sep="")
       system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
       system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$node]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
     }
@@ -143,11 +130,8 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
   } else {
     if (grid) {
       for (j in 1:length(files.hyperslabs)) {
-#         print(paste("ncks -4 -O",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
         system(command = paste(env,"ncks -4 -O ",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
-#         print(paste("ncap2 -4 -O -v  -s 'foo[$time,$node]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
         system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$longitude,$latitude]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
-#         print(paste("ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
         system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
         tmp.nc<-nc_open(tmp.char)
         new.tmax<-ncvar_get(tmp.nc,"foo")
@@ -179,7 +163,6 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
     }
   }
   
-  
   return(tmax)
 }
 
@@ -188,8 +171,8 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
 # In case of hyperslab file is a list of files
 hasDataAbove <- function (file, threshold, var, hyperslab.remaining , index.ref.location = NULL, grid=TRUE, files.hyperslabs=NULL) {
   max<- hyperslab <- NULL
-  test <- 0
-  tmp.char <- "/tmp/tmpmaxisabove.nc"
+  test <- 0 # since working on normalized data, the test is to have a value above 0
+  tmp.char <- paste(workdirtmp,"/tmpmaxisabove.nc",sep="")
   if (is.null(files.hyperslabs)) {
     if (!is.null(index.ref.location)) { 
       if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
@@ -211,6 +194,13 @@ hasDataAbove <- function (file, threshold, var, hyperslab.remaining , index.ref.
   return(max>test)
 }
 
+# Returns a dataframe with original first time and last time of the present nc file
+initHyperslabRemaining <- function (file.in) {
+  nc.in <- nc_open(file.in,readunlim = FALSE)
+  times <- ncvar_get(nc.in,"time")
+  nc_close(nc.in)
+  return( data.frame(start=times[1],end=times[length(times)]) )
+}
 
 # Create and return the list of temporary files created to handle
 #the hyperslabs of reference when performing the storm detection
@@ -221,7 +211,7 @@ createhyperslabsfiles <- function(file,var,index.ref.location) {
     
     print(paste("(Temporary hyperslabs files) Computing:",i,"on",nrow(index.ref.location)))
     
-    tmp.file <- paste("/tmp/tmphyperslabs-",i,".nc",sep="")
+    tmp.file <- paste(workdirtmp,"/tmphyperslabs-",i,".nc",sep="")
     files.hyperslabs<-c(files.hyperslabs,tmp.file)
     hyperslab <- paste("-X ",
                        sprintf("%.11f",as.numeric(as.character(index.ref.location$lon.min[i]))),",",
@@ -229,7 +219,24 @@ createhyperslabsfiles <- function(file,var,index.ref.location) {
                        sprintf("%.11f",as.numeric(as.character(index.ref.location$lat.min[i]))),",",
                        sprintf("%.11f",as.numeric(as.character(index.ref.location$lat.max[i]))),
                        sep="")
-    system(command = paste(env,"ncks -4 -O",hyperslab,"-v",var,file,tmp.file))
+    
+    system(command = paste(env,"ncks -4 -O",hyperslab,"-v time -v",var,file,tmp.file))
   }
   return(files.hyperslabs)
+}
+
+# Return a boolean if the new hyperslab.storm overflows time occurences of storms already selected
+hasTimeOverflows <- function (hyperslab.storms,hyperslab.storm) {
+  hasoverflow <- FALSE
+  if (!is.null(hyperslab.storms)) {
+    for (i in seq(1,nrow(hyperslab.storms))) {
+      if ( (hyperslab.storm$start > hyperslab.storms$start[i] & hyperslab.storm$start < hyperslab.storms$end[i]) |
+             (hyperslab.storm$end > hyperslab.storms$start[i] & hyperslab.storm$start < hyperslab.storms$end[i]) 
+      ) {
+        hasoverflow <- TRUE
+        break
+      }
+    } 
+  }
+  return (hasoverflow)
 }

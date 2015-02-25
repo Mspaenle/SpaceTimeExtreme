@@ -1,7 +1,7 @@
 require(ncdf4)
 
 # Return a list of files with uplifted storms
-lift <- function (Xs.1,var,t0.i,files.scale.parameters,grid=TRUE) {
+lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
   nc <- nc_open(unlist(Xs.1[1]))
   times <- nc$dim$time$len
   nc_close(nc)

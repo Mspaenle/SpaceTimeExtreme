@@ -24,11 +24,3 @@ Xs <- function (file,var,index.location,grid=TRUE) {
   nc_close(nc)
   return(data.frame(date=date,var=timeserie))
 }
-
-# tmp.char <- "/tmp/tmptimeserie.nc")
-# DEPRECATED: system(command = paste(env,"ncks -O -v ",var,",time -d longitude,",index.location[1]," -d latitude,",index.location[2]," ",file," ",tmp.char,sep=""))
-# DEPRECATED: system(command = paste(env,"ncks -O -v ",var,",time -d node,",index.location[1]," ",file," ",tmp.char,sep=""))
-#   tmp.nc<-open.ncdf(tmp.char)
-#   timeserie<-get.var.ncdf(tmp.nc,var)
-#   date<-get.var.ncdf(tmp.nc,"time")
-#   close.ncdf(tmp.nc)

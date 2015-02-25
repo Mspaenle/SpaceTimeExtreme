@@ -12,6 +12,7 @@ properties <- setNames(properties[,1],row.names(properties))
 ######################
 env <- properties["env"] # to have local commands like ncks (nco)
 workdir <- properties["workdir"]
+workdirtmp <- properties["workdirtmp"]
 
 # NETCDF FILES #
 #######################
@@ -22,13 +23,9 @@ env.var <- as.character(properties["var"])
 env.covar <- as.character(properties["covar"])
 env.outdir <- paste(workdir,properties["outdir"],sep="/")
 
-env.tmp.bs <- paste(workdir,properties["tmpbs"],sep="/")
-env.tmp.as <- paste(workdir,properties["tmpas"],sep="/")
 env.tmpnormalized.file <- paste(workdir,properties["tmpnormalized"],sep="/")
-bs.file <- env.tmp.bs# bs.file will contain all GPD Margin Fit parameters
-as.file <- env.tmp.as
-files.scale.parameters <- c(bs.file,as.file)
-file.in <- env.tmpnormalized.file # normalized data
+# file.in <- env.tmpnormalized.file # normalized data
+env.tmpfitinfo.file <- paste(workdir,properties["tmpfitinfo"],sep="/")
 
 # DEBUG MODE #
 ##############
@@ -75,6 +72,10 @@ if (has.fixed.reference & has.hyperslab.reference) {
 } else if (has.hyperslab.reference) {
   file.hyperslab.reference <- properties["file.hyperslab.reference"]
   ref.hyperslab <- read.csv2(file=paste(workdir,file.hyperslab.reference,sep="/"),header = TRUE)
+  ref.hyperslab$lon.min <- as.numeric(as.character(ref.hyperslab$lon.min))
+  ref.hyperslab$lon.max <- as.numeric(as.character(ref.hyperslab$lon.max))
+  ref.hyperslab$lat.min <- as.numeric(as.character(ref.hyperslab$lat.min))
+  ref.hyperslab$lat.max <- as.numeric(as.character(ref.hyperslab$lat.max))
 }
 
 env.delta <- as.numeric(properties["delta.storm"])
