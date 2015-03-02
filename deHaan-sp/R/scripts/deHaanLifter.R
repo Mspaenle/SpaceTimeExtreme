@@ -2,39 +2,42 @@ require(ncdf4)
 
 # Return a list of files with uplifted storms
 lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
-  nc <- nc_open(unlist(Xs.1[1]))
+  nc <- nc_open(unlist(Xs.1[1]),readunlim = FALSE)
   times <- nc$dim$time$len
   nc_close(nc)
   
-  nc.parameters <- nc_open(files.scale.parameters[1],readunlim = FALSE)
-  bt.s <- rep(ncvar_get(nc = nc.parameters,"thresholds"),times)
-  estim.gamma.s <- rep(ncvar_get(nc = nc.parameters,"gamma"),times)
-  estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma"),times)
+  nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
+  u.s <- rep(ncvar_get(nc = nc.parameters,"u_s"),times)
+  estim.gamma.s <- rep(ncvar_get(nc = nc.parameters,"gamma_s"),times)
+  estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma_s"),times)
+  inverse.estim.gamma.s <- rep(1/estim.gamma.s,times)
   nc_close(nc.parameters)
-  inverse.estim.gamma.s <- rep(1/estim.gamma.s)
   
+  varnorm<-paste(var,"_normalized",sep="")
   for (i in 1:length(Xs.1)) {
-   transformed.Xs.1.nc <- nc_open(unlist(Xs.1[i]))
-   transformed.Xs.1 <- as.vector(ncvar_get(nc = transformed.Xs.1.nc,var))
-   nc_close(transformed.Xs.1.nc)
+   Xs.1.nc <- nc_open(unlist(Xs.1[i]),readunlim = FALSE)
+   transformed.Xs.1 <- as.vector(ncvar_get(nc = Xs.1.nc,varnorm))
+   nc_close(Xs.1.nc)
    
    Xs.2.i <- t0.i[i] * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
    # OPTIONS TRANSFORMATION EMPIRIQUE: 
    # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
-   Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + bt.s
-   Xs.1.i <- ( transformed.Xs.1 * estim.sigma.s ) + bt.s
+   Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + u.s
      
-   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.1 = Xs.1.i, Xs.3 = Xs.3.i, var, grid)
+   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.2 = Xs.2.i, Xs.3 = Xs.3.i, var, grid)
   }
   
   return(Xs.1)
 }
 
 
-# From the original storm nc.file (with Xs1 transformed var)
-# add lifted (Xs.3) and original scaled (Xs.1) time series
-addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.1, Xs.3, var, grid) {
-  in.nc<-nc_open(originalStorm.nc,write = TRUE)
+# From the original storm nc.file (with Xs(1)  var)
+# add lifted (Xs.3) and re-scaled (Xs.1) time series
+addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
+  in.nc<-nc_open(originalStorm.nc,readunlim = FALSE)
+  tmp.nc<-paste(workdirtmp,"/uplifted.nc",sep="")
+  if (file.exists(tmp.nc)) file.remove(tmp.nc)
+  
   units.var <- ""
   units.time <- ""
   prec="single"
@@ -56,34 +59,29 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.1, Xs.3, var, grid) {
     dimX <- ncdim_def("longitude", "degrees", lon)
     dimY <- ncdim_def("latitude", "degrees", lat)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
-    varlifted <- ncvar_def(paste(var,"Lifted",sep=""),units.var,list(dimX,dimY,dimTime),
+    varlifted <- ncvar_def(paste(var,"_uplifted",sep=""),units.var,list(dimX,dimY,dimTime),
                            missval=missval,prec="float",compression = 9)
-    varorigin <- ncvar_def(paste(var,"Origin",sep=""),units.var,list(dimX,dimY,dimTime),
+    varnormalizeduplifted <- ncvar_def(paste(var,"_normalized_uplifted",sep=""),units.var,list(dimX,dimY,dimTime),
                            missval=missval,prec="float",compression = 9)
-    ncvar_add(in.nc,varlifted)
-    ncvar_add(in.nc,varorigin)
-    nc_close(in.nc)
-    in.nc<-nc_open(originalStorm.nc,write=TRUE)
-    ncvar_put(in.nc,varid = paste(var,"Lifted",sep=""),vals = Xs.3,start=c(1,1,1),count=c(-1,-1,-1),verbose = TRUE)
-    ncvar_put(in.nc,varid = paste(var,"Origin",sep=""),vals = Xs.1,start=c(1,1,1),count=c(-1,-1,-1),verbose = TRUE)
-    nc_close(in.nc)
+    tmp<-nc_create(filename = tmp.nc,vars = list(varlifted,varnormalizeduplifted),force_v4 = TRUE)
+    ncvar_put(tmp,varid = paste(var,"_uplifted",sep=""),vals = Xs.3,start=c(1,1,1),count=c(-1,-1,-1))
+    ncvar_put(tmp,varid = paste(var,"_normalized_uplifted",sep=""),vals = Xs.2,start=c(1,1,1),count=c(-1,-1,-1))
   } else {
     node<-ncvar_get(in.nc,"node")
     time<-ncvar_get(in.nc,"time")
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
-    varlifted <- ncvar_def(paste(var,"Lifted",sep=""),units.var,list(dimNode,dimTime),
+    varlifted <- ncvar_def(paste(var,"_uplifted",sep=""),units.var,list(dimNode,dimTime),
                            missval=missval,prec="float",compression = 9)
-    varorigin <- ncvar_def(paste(var,"Origin",sep=""),units.var,list(dimNode,dimTime),
+    varnormalizeduplifted <- ncvar_def(paste(var,"_normalized_uplifted",sep=""),units.var,list(dimNode,dimTime),
                            missval=missval,prec="float",compression = 9)
-    ncvar_add(in.nc,varlifted)
-    ncvar_add(in.nc,varorigin)
-    nc_close(in.nc)
-    in.nc<-nc_open(originalStorm.nc,write=TRUE)
-    ncvar_put(in.nc,varid = paste(var,"Lifted",sep=""),vals = Xs.3,start=c(1,1),count=c(-1,-1))
-    ncvar_put(in.nc,varid = paste(var,"Origin",sep=""),vals = Xs.1,start=c(1,1),count=c(-1,-1))
-    nc_close(in.nc)
+    tmp<-nc_create(filename = tmp.nc,vars = list(varlifted,varnormalizeduplifted),force_v4 = TRUE)
+    ncvar_put(tmp,varid = paste(var,"_uplifted",sep=""),vals = Xs.3,start=c(1,1),count=c(-1,-1))
+    ncvar_put(tmp,varid = paste(var,"_normalized_uplifted",sep=""),vals = Xs.2,start=c(1,1),count=c(-1,-1))
   }
+  nc_close(in.nc)
+  nc_close(tmp)
+  system(command = paste(env,"ncks -A ",tmp.nc,in.nc))
 }
 
 
@@ -125,7 +123,7 @@ computetzeroi <- function(Xs.1,var, t0.mode, paramsXsPOT, consecutivebelow, obsp
 
 # Return max of a file
 ncdfmax <- function (file, var, index.ref.location = NULL, grid=TRUE) {
-  tmp.char <- "/tmp/tmpmax.nc"
+  tmp.char <- paste(workdirtmp,"/ncdfmax.nc",sep="")
   if (!is.null(index.ref.location)) { 
     if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
     else hyperslab <- paste("-d node,",index.ref.location[1],sep="")

@@ -50,13 +50,12 @@ decluster <- function (var,
   print(paste("(Decluster Storm) Completion:",j,"on targeted",storms.tot, "storm(s)"))
   hyperslab.storms <- NULL 
   while (storms.tot > 0 & hasDataAbove) {
-    
     t.max <- getMaxTimeValue(varnorm,file.tmpfitinfo,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs)
     hyperslab.storm <- data.frame(start = t.max-delta, end = t.max+delta)
     if (hasTimeOverflows(hyperslab.storms,hyperslab.storm)) warning(paste("Storm",j,"has a time overflow regarding selected storms."))
     hyperslab.storms <- rbind(hyperslab.storms,hyperslab.storm)
     
-    storm <- extractStorm(file.origin,hyperslabToString(hyperslab.storm),grid,outputDir,j)
+    storm <- extractStorm(file.origin,file.tmpfitinfo,varnorm,hyperslabToString(hyperslab.storm),grid,outputDir,j)
     storms <- c(storms,storm)
     
     hyperslab.remaining.peak <- getHyperslabRemaining(hyperslab.remaining.peak,hyperslab.storm,rdelta)
@@ -72,9 +71,14 @@ decluster <- function (var,
 }
 
 # Returns ncfile of the selected storm (within hyperslab.storm.string)
-extractStorm <- function (file,hyperslab.storm.string,grid,outputDir,k) {
+extractStorm <- function (file,file.tmpfitinfo,varnormalized,hyperslab.storm.string,grid,outputDir,k) {
   storm.nc <- paste(outputDir,"/storm-",k,".nc",sep="")
+  tmp.nc <- paste(workdirtmp,"/normalizedvar-storm-",k,".nc",sep="")
+  
   system(command = paste(env,"ncks -4 -O",hyperslab.storm.string,file,storm.nc))
+  system(command = paste(env,"ncks -4 -O -v",varnormalized,hyperslab.storm.string,file.tmpfitinfo,tmp.nc))
+  system(command = paste(env,"ncks -A ",tmp.nc,storm.nc))
+  
   return(storm.nc)
 }
 
@@ -82,17 +86,43 @@ extractStorm <- function (file,hyperslab.storm.string,grid,outputDir,k) {
 getHyperslabRemaining <- function (hyperslab.remaining.peak,hyperslab.storm,rdelta) {
   storm.min <- hyperslab.storm[1,1] - rdelta
   storm.max <- hyperslab.storm[1,2] + rdelta
-  i <- 0; found <- FALSE
-  while (i <= nrow(hyperslab.remaining.peak) & !found){
+  
+  i <- 0; found <- FALSE;
+  
+  if (storm.max > hyperslab.remaining.peak[nrow(hyperslab.remaining.peak),2]) {
+    stop ("max-time of the storm is greater than full time series")
+  }
+  if (storm.min < hyperslab.remaining.peak[1,1]) {
+    stop ("min-time of the storm is smaller than full time series")
+  }
+  
+  while (i <= nrow(hyperslab.remaining.peak) & !found) {
     i <- i+1
-    if (hyperslab.remaining.peak[i,1] <= storm.min  & storm.min < hyperslab.remaining.peak[i,2] ) {
+    if ( (hyperslab.remaining.peak[i,1] <= storm.min) & (storm.min < hyperslab.remaining.peak[i,2]) &
+           (hyperslab.remaining.peak[i,1] < storm.max) & (storm.max <= hyperslab.remaining.peak[i,2])) { 
+      # case standard
       found <- TRUE
+    } else if ((hyperslab.remaining.peak[i,1] <= storm.min) & (storm.min < hyperslab.remaining.peak[i,2])
+               & (storm.max > hyperslab.remaining.peak[i,2])) {
+      # overflow
+      found <- TRUE
+      storm.max <- hyperslab.remaining.peak[i,2]
+    } else if ((hyperslab.remaining.peak[i,1] < storm.max) & (storm.max <= hyperslab.remaining.peak[i,2])
+               & (storm.min < hyperslab.remaining.peak[i,1])) {
+      # overflow
+      found <- TRUE
+      storm.min <- hyperslab.remaining.peak[i,1]
     }
   }
-  df <- hyperslab.remaining.peak[1:i,]
-  df[i,2] <- storm.min
-  df <- rbind(df,hyperslab.remaining.peak[i:nrow(hyperslab.remaining.peak),])
-  df[i+1,1] <- storm.max
+  if (found) {#case standard
+    df <- hyperslab.remaining.peak[1:i,]
+    df[i,2] <- storm.min
+    df <- rbind(df,hyperslab.remaining.peak[i:nrow(hyperslab.remaining.peak),])
+    df[i+1,1] <- storm.max  
+  } else {
+    df <- hyperslab.remaining.peak
+    warning ("there is an issue while selectioning remaining time set...")
+  }
   return(df)
 }
 
@@ -228,11 +258,11 @@ createhyperslabsfiles <- function(file,var,index.ref.location) {
 # Return a boolean if the new hyperslab.storm overflows time occurences of storms already selected
 hasTimeOverflows <- function (hyperslab.storms,hyperslab.storm) {
   hasoverflow <- FALSE
-  if (!is.null(hyperslab.storms)) {
+  if (!(is.null(hyperslab.storms))) {
     for (i in seq(1,nrow(hyperslab.storms))) {
-      if ( (hyperslab.storm$start > hyperslab.storms$start[i] & hyperslab.storm$start < hyperslab.storms$end[i]) |
-             (hyperslab.storm$end > hyperslab.storms$start[i] & hyperslab.storm$start < hyperslab.storms$end[i]) 
-      ) {
+      if ( ((hyperslab.storm$start > hyperslab.storms$start[i]) & (hyperslab.storm$start < hyperslab.storms$end[i]) ) |
+             ((hyperslab.storm$end > hyperslab.storms$start[i]) & (hyperslab.storm$start < hyperslab.storms$end[i]) ) ) 
+        {
         hasoverflow <- TRUE
         break
       }
