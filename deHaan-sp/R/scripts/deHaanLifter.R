@@ -89,7 +89,7 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
 # 2 = the within-cluster maxima at reference station reach the targeted ym return value
 # Return values in a vector
-computetzeroi <- function(Xs.1,var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, grid) {
+computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, grid) {
   t0.i <- NULL
   gamma <- paramsXsPOT$shape
   a <- paramsXsPOT$scale
@@ -120,7 +120,6 @@ computetzeroi <- function(Xs.1,var, t0.mode, paramsXsPOT, consecutivebelow, obsp
   return(t0.i)
 }
 
-
 # Return max of a file
 ncdfmax <- function (file, var, index.ref.location = NULL, grid=TRUE) {
   tmp.char <- paste(workdirtmp,"/ncdfmax.nc",sep="")
@@ -135,4 +134,9 @@ ncdfmax <- function (file, var, index.ref.location = NULL, grid=TRUE) {
   nc_close(tmp.nc)
   
   return(max)
+}
+
+# Find and store Empirical functions in a 1D list
+empiricaldist <- function (file, var, tmpfitinfo.file, grid=TRUE) {
+  
 }

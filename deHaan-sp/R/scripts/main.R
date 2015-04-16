@@ -11,7 +11,7 @@ source("setEnv.R")
 # 1/ GET a time series X(s) indexed by s = node number
 source("extractTimeSerie.R")
 print("Extract Ref Location Timeserie")
-Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=TRUE)
+Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=env.grid)
 
 #------------------------------------------------------------------------------#
 # 2/ GPD fit at reference station and store marginal results
@@ -29,13 +29,13 @@ if (!env.restart.marginsfit) {
   print("Construct Margins GPD fit and store parameters in tmpfitinfo")
   createMarginScaleParameters(env.file, env.var, above, 
                               r=env.consecutivebelow, cmax=env.cmax, 
-                              tmpfitinfo.file = env.tmpfitinfo.file, grid=env.grid, mode=env.margin.transformation.mode)
+                              tmpfitinfo.file = env.tmpfitinfo.file, grid=env.grid)
   print("Normalize")
   normalizeMargins(env.file, env.var, env.tmpfitinfo.file, normalizedfile = env.tmpnormalized.file)
 } 
 
 # stop("debug")
-#  mode = env.margin.transformation.mode
+
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")
@@ -68,6 +68,11 @@ t0.i <- computetzeroi(Xs.1,env.var,env.t0.mode,paramsXsPOT,
                       env.m.returnperiod,env.cmax,env.ref.t0,env.grid)
 
 #------------------------------------------------------------------------------#
+# Find out if we need local empirical distribution function. If so, compute them
+if (env.margin.transformation.mode != 4) {
+  
+}
+
 # 5/ Transform X^1(s) to X^2(s) using t0
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
