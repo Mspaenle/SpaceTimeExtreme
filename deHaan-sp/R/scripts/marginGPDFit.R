@@ -46,19 +46,23 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     thres2D <- gamma2D <- scale2D <- stdrrGamma2D <- stdrrScale2D <- NULL
     
     ## ADD PARALLELISATION HERE ##
-    for (y in 1:length(lat)) {
-      for (x in 1:length(lon)) {
-        print(paste("Margin FPOT - Lon:",x,"Lat",y))
-        Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
-        paramsXsPOT<-margfit(Xs.ref$var,above,r = r,cmax = cmax)
-        gamma2D <- c(gamma2D,paramsXsPOT$shape)
-        scale2D <- c(scale2D,paramsXsPOT$scale)
-        stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
-        stdrrScale2D <- c(stdrrScale2D,paramsXsPOT$std.err[2])
-        thres2D <- c(thres2D,as.numeric(paramsXsPOT$threshold))
+    if (env.parallel) {
+      
+    } else {
+      for (y in 1:length(lat)) {
+        for (x in 1:length(lon)) {
+          print(paste("Margin FPOT - Lon:",x,"Lat",y))
+          Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
+          paramsXsPOT<-margfit(Xs.ref$var,above,r = r,cmax = cmax)
+          gamma2D <- c(gamma2D,paramsXsPOT$shape)
+          scale2D <- c(scale2D,paramsXsPOT$scale)
+          stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
+          stdrrScale2D <- c(stdrrScale2D,paramsXsPOT$std.err[2])
+          thres2D <- c(thres2D,as.numeric(paramsXsPOT$threshold))
+        }
       }
     }
-    ##
+    
     asreverse2D<-1/scale2D
     
     dimX <- ncdim_def("longitude", "degrees", lon)
@@ -88,18 +92,124 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     
     node<-ncvar_get(in.nc,"node")
     time<-ncvar_get(in.nc,"time")
+    
     ## ADD PARALLELISATION HERE ##
-    for (x in 1:length(node)) {
-      print(paste("Margin FPOT - Node:",x))
-      Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
-      paramsXsPOT<-margfit(Xs.ref$var,above,r=r,cmax=cmax)
-      gamma1D <- c(gamma1D,paramsXsPOT$shape)
-      scale1D <- c(scale1D,paramsXsPOT$scale)
-      stdrrGamma1D <- c(stdrrGamma1D,paramsXsPOT$std.err[1])
-      stdrrScale1D <- c(stdrrScale1D,paramsXsPOT$std.err[2])
-      thres1D <- c(thres1D,as.numeric(paramsXsPOT$threshold))
+    if (env.parallel) {
+      gamma1D <- rep(0,length(node))
+      scale1D <- rep(0,length(node))
+      stdrrGamma1D <- rep(0,length(node))
+      stdrrScale1D <- rep(0,length(node))
+      thres1D <- rep(0,length(node))
+      
+      require(Rmpi)
+      ## // function
+      parallelfit <- function() {
+        # Tag for sent messages : 
+        # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
+        # Tag for receive messages :
+        # 1 = task ; 2 = done_tasks
+        done <- 0
+        junk <-0
+        while (done !=1) {
+          master<-0 ; ready4task<-1
+          #signal being ready to receive a new task
+          mpi.send.Robj(junk,master,ready4task)
+          #receive a task
+          task <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
+          task_info <- mpi.get.sourcetag()
+          tag <- task_info[2]
+          bug=FALSE
+          result<-NULL
+          if (tag == 1) { #task to perform
+            tryCatch({
+              x<-as.numeric(unlist(task))
+              print(paste("Margin FPOT - Node:",x))
+              Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
+              paramsXsPOT<-margfit(Xs.ref$var,above,r=r,cmax=cmax)
+              result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
+                           stdrrGamma1D=paramsXsPOT$std.err[1],stdrrScale1D=paramsXsPOT$std.err[2],
+                           thres1D=as.numeric(paramsXsPOT$threshold))
+            }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
+            if (bug) {
+              result<-list(node=x,gamma1D=NULL,scale1D=NULL,
+                           stdrrGamma1D=NULL],stdrrScale1D=NULL,
+                           thres1D=NULL)
+              mpi.send.Robj(result,0,4) 
+            } else {
+              mpi.send.Robj(result,0,2)
+            }
+          } else if (tag==2) { #no more job to do
+            done <-1
+          }
+        }
+        #exiting
+        mpi.send.Robj(junk,0,3)
+      }
+      
+      ## Master part
+      mpi.bcast.Robj2slave(parallelfit)
+      mpi.bcast.Robj2slave(file)
+      mpi.bcast.Robj2slave(var)
+      mpi.bcast.Robj2slave(grid)
+      mpi.bcast.Robj2slave(above)
+      mpi.bcast.Robj2slave(r)
+      mpi.bcast.Robj2slave(cmax)
+      print("data broadcasted")
+      mpi.bcast.cmd(parallelfit())
+      print("slaves launched")
+      
+      #create take list
+      tasks <- vector('list')
+      for (i in 1:length(node)) {  
+        tasks[i] <- list(i=i)
+      }
+      closed_slaves<-0
+      n_slaves<-mpi.comm.size()-1
+      while (closed_slaves < n_slaves) {
+        #receive message from a slave
+        message <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
+        message_info <- mpi.get.sourcetag()
+        slave_id <- message_info[1]
+        tag <- message_info[2]
+        
+        if (tag == 1) {
+          #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
+          if (length(tasks) > 0) {
+            #send a task and remove it from the list
+            mpi.send.Robj(tasks[1],slave_id,1)
+            tasks[1] <- NULL
+          } else {
+            #send signal that all tasks are already handled
+            print("All tasks are handled. Signal to close down the slave...")
+            mpi.send.Robj(junk, slave_id,2)
+          }
+        } else if (tag == 2 || tag == 4) {
+          #message contains results. Deal with it.
+          res<-message
+          list(node=x,
+          gamma1D[res$node] <- res$gamma1D
+          scale1D[res$node] <- res$scale1D
+          stdrrGamma1D[res$node] <- res$stdrrGamma1D
+          stdrrScale1D[res$node] <- res$stdrrScale1D
+          thres1D[res$node] <- res$thres1D
+        } else if (tag == 3) {
+          #a slave has closed down.
+          closed_slaves <- closed_slaves + 1
+        }
+      }
+    } else {
+      for (x in 1:length(node)) {
+        print(paste("Margin FPOT - Node:",x))
+        Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
+        paramsXsPOT<-margfit(Xs.ref$var,above,r=r,cmax=cmax)
+        gamma1D <- c(gamma1D,paramsXsPOT$shape)
+        scale1D <- c(scale1D,paramsXsPOT$scale)
+        stdrrGamma1D <- c(stdrrGamma1D,paramsXsPOT$std.err[1])
+        stdrrScale1D <- c(stdrrScale1D,paramsXsPOT$std.err[2])
+        thres1D <- c(thres1D,as.numeric(paramsXsPOT$threshold))
+      }  
     }
-    ##
+
     asreverse1D <- 1/scale1D
     
     dimNode <- ncdim_def("node", "count", node)

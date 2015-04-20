@@ -13,6 +13,7 @@ properties <- setNames(properties[,1],row.names(properties))
 env <- properties["env"] # to have local commands like ncks (nco)
 workdir <- properties["workdir"]
 workdirtmp <- properties["workdirtmp"]
+env.parallel <- as.logical(properties["parallel"])
 
 # NETCDF FILES #
 #######################
