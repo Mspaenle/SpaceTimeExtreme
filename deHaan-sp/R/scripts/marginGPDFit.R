@@ -222,7 +222,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     varStdrrGamma <- ncvar_def("stderrgamma_s","",dimNode,missval=missval,prec="float",compression = 9)
     varStdrrScale <- ncvar_def("stderrsigma_s","",dimNode,missval=missval,prec="float",compression = 9)
     
-    bs.nc <- nc_create(bs.nc.path,list(varBs,varThres,varGamma,varScale,varStdrrGamma,varStdrrScale))
+    bs.nc <- nc_create(bs.nc.path,list(varBs,varThres,varGamma,varScale,varInverseScale,varStdrrGamma,varStdrrScale))
     
     for (i in 1:length(time)) ncvar_put(bs.nc,varBs,thres1D,start=c(1,i),count=c(-1,1))
     ncvar_put(bs.nc,varThres,thres1D,start=c(1),count=c(-1))
