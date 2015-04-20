@@ -120,7 +120,6 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
           if (tag == 1) { #task to perform
             tryCatch({
               x<-as.numeric(unlist(task))
-              print(paste("Margin FPOT - Node:",x))
               Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
               paramsXsPOT<-margfit(Xs.ref$var,above,r=r,cmax=cmax)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
@@ -152,7 +151,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       mpi.bcast.Robj2slave(grid)
       mpi.bcast.Robj2slave(above)
       mpi.bcast.Robj2slave(r)
-      mpi.bcast.Robj2slave(cmax)
+      mpi.bcast.Robj2slave(env.cmax)
       print("data broadcasted")
       mpi.bcast.cmd(parallelfit())
       print("slaves launched")
@@ -168,13 +167,11 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
         #receive message from a slave
         message <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
         message_info <- mpi.get.sourcetag()
-        str(message)
         slave_id <- message_info[1]
         tag <- message_info[2]
         if (tag == 1) {
           #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
           if (length(tasks) > 0) {
-            print(paste("send task for node",tasks[1]))
             #send a task and remove it from the list
             mpi.send.Robj(tasks[1],slave_id,1)
             tasks[1] <- NULL
@@ -191,6 +188,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
           stdrrGamma1D[res$node] <- res$stdrrGamma1D
           stdrrScale1D[res$node] <- res$stdrrScale1D
           thres1D[res$node] <- res$thres1D
+          print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D))
         } else if (tag == 3) {
           #a slave has closed down.
           closed_slaves <- closed_slaves + 1
