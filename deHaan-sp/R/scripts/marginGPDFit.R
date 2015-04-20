@@ -104,6 +104,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       require(Rmpi)
       ## // function
       parallelfit <- function() {
+        require(ncdf4,evd,fExtremes)
         # Tag for sent messages : 
         # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
         # Tag for receive messages :
@@ -132,7 +133,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
               result<-list(node=x,gamma1D=NULL,scale1D=NULL,
-                           stdrrGamma1D=NULL],stdrrScale1D=NULL,
+                           stdrrGamma1D=NULL,stdrrScale1D=NULL,
                            thres1D=NULL)
               mpi.send.Robj(result,0,4) 
             } else {
@@ -148,6 +149,8 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       
       ## Master part
       mpi.bcast.Robj2slave(parallelfit)
+      mpi.bcast.Robj2slave(Xs)
+      mpi.bcast.Robj2slave(margfit)
       mpi.bcast.Robj2slave(file)
       mpi.bcast.Robj2slave(var)
       mpi.bcast.Robj2slave(grid)
@@ -186,8 +189,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
         } else if (tag == 2 || tag == 4) {
           #message contains results. Deal with it.
           res<-message
-          list(node=x,
-          gamma1D[res$node] <- res$gamma1D
+          gamma1D[res$node]<-res$gamma1D
           scale1D[res$node] <- res$scale1D
           stdrrGamma1D[res$node] <- res$stdrrGamma1D
           stdrrScale1D[res$node] <- res$stdrrScale1D
