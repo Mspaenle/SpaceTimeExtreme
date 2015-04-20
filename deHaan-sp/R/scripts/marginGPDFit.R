@@ -127,9 +127,9 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
                            thres1D=as.numeric(paramsXsPOT$threshold))
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
-              result<-list(node=x,gamma1D=NULL,scale1D=NULL,
-                           stdrrGamma1D=NULL,stdrrScale1D=NULL,
-                           thres1D=NULL)
+              result<-list(node=x,gamma1D=-0,scale1D=-0,
+                           stdrrGamma1D=-0,stdrrScale1D=-0,
+                           thres1D=-0)
               mpi.send.Robj(result,0,4) 
             } else {
               mpi.send.Robj(result,0,2)
@@ -152,6 +152,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       mpi.bcast.Robj2slave(above)
       mpi.bcast.Robj2slave(r)
       mpi.bcast.Robj2slave(env.cmax)
+      mpi.bcast.Robj2slave(env.consecutivebelow)
       print("data broadcasted")
       mpi.bcast.cmd(parallelfit())
       print("slaves launched")
