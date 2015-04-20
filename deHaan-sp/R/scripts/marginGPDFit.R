@@ -224,11 +224,11 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     
     bs.nc <- nc_create(bs.nc.path,list(varBs,varThres,varGamma,varScale,varStdrrGamma,varStdrrScale))
     
-    for (i in 1:length(time)) ncvar_put(bs.nc,varBs,thres1D,start=c(1,i),count=c(-1,-1))
+    for (i in 1:length(time)) ncvar_put(bs.nc,varBs,thres1D,start=c(1,i),count=c(-1,1))
     ncvar_put(bs.nc,varThres,thres1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varGamma,gamma1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varScale,scale1D,start=c(1),count=c(-1))
-    for (i in 1:length(time)) ncvar_put(bs.nc,varInverseScale,asreverse1D,start=c(1,i),count=c(-1,-1))
+    for (i in 1:length(time)) ncvar_put(bs.nc,varInverseScale,asreverse1D,start=c(1,i),count=c(-1,1))
     ncvar_put(bs.nc,varStdrrGamma,stdrrGamma1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varStdrrScale,stdrrScale1D,start=c(1),count=c(-1))
   }
