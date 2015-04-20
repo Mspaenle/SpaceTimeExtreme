@@ -106,7 +106,6 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
         # Tag for receive messages :
         # 1 = task ; 2 = done_tasks
         done <- 0
-        junk <-0
         while (done !=1) {
           master<-0 ; ready4task<-1
           #signal being ready to receive a new task
@@ -139,6 +138,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
           }
         }
         #exiting
+        junk <- 0
         mpi.send.Robj(junk,0,3)
       }
       
