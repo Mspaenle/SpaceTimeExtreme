@@ -45,21 +45,16 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     
     thres2D <- gamma2D <- scale2D <- stdrrGamma2D <- stdrrScale2D <- NULL
     
-    ## ADD PARALLELISATION HERE ##
-    if (env.parallel) {
-      
-    } else {
-      for (y in 1:length(lat)) {
-        for (x in 1:length(lon)) {
-          print(paste("Margin FPOT - Lon:",x,"Lat",y))
-          Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
-          paramsXsPOT<-margfit(Xs.ref$var,above,r = r,cmax = cmax)
-          gamma2D <- c(gamma2D,paramsXsPOT$shape)
-          scale2D <- c(scale2D,paramsXsPOT$scale)
-          stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
-          stdrrScale2D <- c(stdrrScale2D,paramsXsPOT$std.err[2])
-          thres2D <- c(thres2D,as.numeric(paramsXsPOT$threshold))
-        }
+    for (y in 1:length(lat)) {
+      for (x in 1:length(lon)) {
+        print(paste("Margin FPOT - Lon:",x,"Lat",y))
+        Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
+        paramsXsPOT<-margfit(Xs.ref$var,above,r = r,cmax = cmax)
+        gamma2D <- c(gamma2D,paramsXsPOT$shape)
+        scale2D <- c(scale2D,paramsXsPOT$scale)
+        stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
+        stdrrScale2D <- c(stdrrScale2D,paramsXsPOT$std.err[2])
+        thres2D <- c(thres2D,as.numeric(paramsXsPOT$threshold))
       }
     }
     
@@ -93,7 +88,6 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     node<-ncvar_get(in.nc,"node")
     time<-ncvar_get(in.nc,"time")
     
-    ## ADD PARALLELISATION HERE ##
     if (env.parallel) {
       gamma1D <- rep(0,length(node))
       scale1D <- rep(0,length(node))
@@ -104,7 +98,9 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       require(Rmpi)
       ## // function
       parallelfit <- function() {
-        require(ncdf4,evd,fExtremes)
+        require(ncdf4)
+        require(evd)
+        require(fExtremes)
         # Tag for sent messages : 
         # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
         # Tag for receive messages :
@@ -172,12 +168,13 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
         #receive message from a slave
         message <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
         message_info <- mpi.get.sourcetag()
+        str(message)
         slave_id <- message_info[1]
         tag <- message_info[2]
-        
         if (tag == 1) {
           #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
           if (length(tasks) > 0) {
+            print(paste("send task for node",tasks[1]))
             #send a task and remove it from the list
             mpi.send.Robj(tasks[1],slave_id,1)
             tasks[1] <- NULL
