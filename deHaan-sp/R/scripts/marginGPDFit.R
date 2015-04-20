@@ -214,7 +214,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
     
-    varBs <- ncvar_def("u_s_repeated",units.var,list(dimN,dimTime),missval=missval,prec="float",compression = 9)      
+    varBs <- ncvar_def("u_s_repeated",units.var,list(dimNode,dimTime),missval=missval,prec="float",compression = 9)      
     varThres <- ncvar_def("u_s","",dimNode,missval=missval,prec="float",compression = 9)
     varGamma <- ncvar_def("gamma_s","",dimNode,missval=missval,prec="float",compression = 9)
     varScale <- ncvar_def("sigma_s","",dimNode,missval=missval,prec="float",compression = 9)
