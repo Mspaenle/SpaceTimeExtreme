@@ -89,11 +89,11 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
     time<-ncvar_get(in.nc,"time")
     
     if (env.parallel) {
-      gamma1D <- rep(0,length(node))
-      scale1D <- rep(0,length(node))
-      stdrrGamma1D <- rep(0,length(node))
-      stdrrScale1D <- rep(0,length(node))
-      thres1D <- rep(0,length(node))
+      gamma1D <- rep(-9999,length(node))
+      scale1D <- rep(-9999,length(node))
+      stdrrGamma1D <- rep(-9999,length(node))
+      stdrrScale1D <- rep(-9999,length(node))
+      thres1D <- rep(-9999,length(node))
       
       require(Rmpi)
       ## // function
@@ -127,9 +127,9 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
                            thres1D=as.numeric(paramsXsPOT$threshold))
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
-              result<-list(node=x,gamma1D=-0,scale1D=-0,
-                           stdrrGamma1D=-0,stdrrScale1D=-0,
-                           thres1D=-0)
+              result<-list(node=x,gamma1D=-9999,scale1D=-9999,
+                           stdrrGamma1D=-9999,stdrrScale1D=-9999,
+                           thres1D=-9999)
               mpi.send.Robj(result,0,4) 
             } else {
               mpi.send.Robj(result,0,2)
