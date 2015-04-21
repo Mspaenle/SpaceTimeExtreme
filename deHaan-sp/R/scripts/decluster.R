@@ -161,7 +161,7 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
     }
     system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
     tmp.nc<-nc_open(tmp.char)
-    tmax<-ncvar_get(tmp.nc,"foo")
+    tmax<-ncvar_get(tmp.nc,"time")
     nc_close(tmp.nc)
   } else {
     if (grid) {
@@ -191,14 +191,14 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
         system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$node]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
         system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
         tmp.nc<-nc_open(tmp.char)
-        new.tmax<-ncvar_get(tmp.nc,"foo")
+        new.tmax<-ncvar_get(tmp.nc,"time")
         nc_close(tmp.nc)
         
         system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
         tmp.nc<-nc_open(tmp.char)
         new.max<-ncvar_get(tmp.nc,var)
         nc_close(tmp.nc)
-        
+        print(paste("new.max :",new.max,"; max:",max))      
         if (is.null(max) || new.max > max) tmax <- new.tmax
       }
     }
