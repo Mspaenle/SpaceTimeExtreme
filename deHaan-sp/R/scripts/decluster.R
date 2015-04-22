@@ -154,10 +154,6 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
     } else {
       if (!is.null(index.ref.location)) hyperslab <- paste("-d node,",index.ref.location[1],sep="")
       system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
-      
-      # PRINT TO DEBUG
-      print(paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
-      
       system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
     }
     system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
@@ -184,11 +180,6 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
       }
     } else {
       for (j in 1:length(files.hyperslabs)) {
-        
-        # PRINT TO DEBUG
-        print(paste(env,"ncks -4 -O ",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
-        # PRINT TO DEBUG
-        
         system(command = paste(env,"ncks -4 -O ",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
         system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
         system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))

@@ -77,3 +77,5 @@ if (env.margin.transformation.mode != 4) {
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
 Xs.3 <- lift(Xs.1,env.var,t0.i,env.tmpfitinfo.file,grid=env.grid)
+
+mpi.quit()

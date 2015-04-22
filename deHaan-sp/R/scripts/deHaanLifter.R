@@ -23,7 +23,13 @@ lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
    # OPTIONS TRANSFORMATION EMPIRIQUE: 
    # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
    Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + u.s
-     
+   
+   # PRINT DEBUG #
+   print(paste("transformed.Xs.1 a ",length(transformed.Xs.1),"elements"))
+   print(paste("Xs.2.i a ",length(Xs.2.i),"elements"))
+   print(paste("Xs.3.i a ",length(Xs.3.i),"elements"))
+   # PRINT DEBUG #
+   
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.2 = Xs.2.i, Xs.3 = Xs.3.i, var, grid)
   }
   
