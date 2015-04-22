@@ -31,7 +31,8 @@ decluster <- function (var,
                        rdelta,
                        index.ref.location = NULL,
                        grid=TRUE,
-                       outputDir="../../outputs") {
+                       outputDir="../../outputs",
+                       init.time) {
   if (is.null(k)) storms.tot <- 9999 else storms.tot <- k;
   if (rdelta < delta) warning("choose a Rdelta lower than Delta may results to inconsistent independant storms !")
   
@@ -50,7 +51,7 @@ decluster <- function (var,
   print(paste("(Decluster Storm) Completion:",j,"on targeted",storms.tot, "storm(s)"))
   hyperslab.storms <- NULL 
   while (storms.tot > 0 & hasDataAbove) {
-    t.max <- getMaxTimeValue(varnorm,file.tmpfitinfo,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs)
+    t.max <- getMaxTimeValue(varnorm,file.tmpfitinfo,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs,init.time)
     hyperslab.storm <- data.frame(start = t.max-delta, end = t.max+delta)
     print("storm:")
     str(hyperslab.storm)
@@ -140,7 +141,7 @@ hyperslabToString <- function (hyperslab) {
 }
 
 # Aims to find the time index of the max value contained into a file within the hyperslab.remaining
-getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, hyperslab.remaining = "", files.hyperslabs=NULL) {
+getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, hyperslab.remaining = "", files.hyperslabs=NULL, init.time) {
   tmp.remain <- paste(workdirtmp,"/tmpremain.nc",sep="") 
   tmp.char <- paste(workdirtmp,"/tmpgetmax.nc",sep="")
   
@@ -149,7 +150,7 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
     if (grid) {
       if (!is.null(index.ref.location)) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="")
       system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
-      system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$longitude,$latitude]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
+      system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$longitude,$latitude]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
     } else {
       if (!is.null(index.ref.location)) hyperslab <- paste("-d node,",index.ref.location[1],sep="")
       system(command = paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
@@ -157,17 +158,18 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
       # PRINT TO DEBUG
       print(paste(env,"ncks -4 -O ",hyperslab,hyperslab.remaining,file,tmp.remain))
       
-      system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$node]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
+      system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
     }
     system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
+    
     tmp.nc<-nc_open(tmp.char)
-    tmax<-ncvar_get(tmp.nc,"time")
+    tmax<-ncvar_get(tmp.nc,"foo")
     nc_close(tmp.nc)
   } else {
     if (grid) {
       for (j in 1:length(files.hyperslabs)) {
         system(command = paste(env,"ncks -4 -O ",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
-        system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$longitude,$latitude]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
+        system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$longitude,$latitude]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
         system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
         tmp.nc<-nc_open(tmp.char)
         new.tmax<-ncvar_get(tmp.nc,"foo")
@@ -188,10 +190,10 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
         # PRINT TO DEBUG
         
         system(command = paste(env,"ncks -4 -O ",hyperslab.remaining,files.hyperslabs[j],tmp.remain))
-        system(command = paste(env,"ncap2 -4 -O -v  -s 'foo[$time,$node]=0; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
+        system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=",init.time,"; where(",var,"==",var,".max()) foo=time;' ",tmp.remain," ",tmp.char,sep=""))
         system(command = paste(env,"ncwa -4 -O -b -y max -v foo", tmp.char, tmp.char))
         tmp.nc<-nc_open(tmp.char)
-        new.tmax<-ncvar_get(tmp.nc,"time")
+        new.tmax<-ncvar_get(tmp.nc,"foo")
         nc_close(tmp.nc)
         
         system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
