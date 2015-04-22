@@ -25,6 +25,8 @@ lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
    Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + u.s
    
    # PRINT DEBUG #
+   print(paste("estim.gamma.s a ",length(estim.gamma.s)))
+   print(paste("inverse.estim.gamma.s a ",length(inverse.estim.gamma.s)))
    print(paste("transformed.Xs.1 a ",length(transformed.Xs.1),"elements"))
    print(paste("Xs.2.i a ",length(Xs.2.i),"elements"))
    print(paste("Xs.3.i a ",length(Xs.3.i),"elements"))
