@@ -78,4 +78,7 @@ if (env.margin.transformation.mode != 4) {
 print("Lift")
 Xs.3 <- lift(Xs.1,env.var,t0.i,env.tmpfitinfo.file,grid=env.grid)
 
+
+# 7/ MPI handling
+mpi.close.Rslaves()
 mpi.quit()
