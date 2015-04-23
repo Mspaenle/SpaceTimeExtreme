@@ -10,7 +10,7 @@ lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
   u.s <- rep(ncvar_get(nc = nc.parameters,"u_s"),times)
   estim.gamma.s <- rep(ncvar_get(nc = nc.parameters,"gamma_s"),times)
   estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma_s"),times)
-  inverse.estim.gamma.s <- rep(1/estim.gamma.s,times)
+  inverse.estim.gamma.s <- rep(1/estim.gamma.s)
   nc_close(nc.parameters)
   
   varnorm<-paste(var,"_normalized",sep="")
