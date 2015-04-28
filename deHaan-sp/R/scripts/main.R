@@ -17,8 +17,8 @@ Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=env.grid)
 # 2/ GPD fit at reference station and store marginal results
 print("Reference (t0) location GPD Fit")
 source("marginGPDFit.R")
-above <- length(Xs.ref$var) * env.p
-paramsXsPOT<-margfit(Xs.ref$var, above, r=env.consecutivebelow, cmax=env.cmax)
+quantile <- as.numeric(quantile(Xs.ref$var,env.p))
+paramsXsPOT<-margfit(Xs.ref$var, quantile, r=env.consecutivebelow, cmax=env.cmax)
 ref.threshold <- as.numeric(paramsXsPOT$threshold)
 #------------------------------------------------------------------------------#
 # 4/ Decluster data to obtain X^1(s) storms
@@ -27,7 +27,7 @@ source("marginGPDFit.R")
 
 if (!env.restart.marginsfit) {
   print("Construct Margins GPD fit and store parameters in tmpfitinfo")
-  createMarginScaleParameters(env.file, env.var, above, 
+  createMarginScaleParameters(env.file, env.var, proba = env.p, 
                               r=env.consecutivebelow, cmax=env.cmax, 
                               tmpfitinfo.file = env.tmpfitinfo.file, grid=env.grid)
   print("Normalize")

@@ -1,13 +1,11 @@
 require(ncdf4)
 
 # Fit GPD
-margfit <- function (data,above,r=1,cmax=FALSE) {
-  require(fExtremes,evd)
-  #find threshold
-  threshold<-findThreshold(data,n=above)
+margfit <- function (data,quantile,r=1,cmax=FALSE) {
+  require(evd)
   
   #find parameters
-  fit<-fpot(data,as.numeric(threshold),r=r,cmax=cmax)
+  fit<-fpot(data,threshold=quantile,r=r,cmax=cmax)
   
   return(list(threshold=threshold,
               scale=as.numeric(fit$estimate['scale']),
@@ -18,7 +16,7 @@ margfit <- function (data,above,r=1,cmax=FALSE) {
 
 # Fit GPD at any location of file and store both local threshold and scale parameters in a temp_file
 # for re-use with NCBO (see NCO).
-createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,grid=TRUE) {
+createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,grid=TRUE) {
   source("extractTimeSerie.R")
   prec="single"
   missval=1.e30
@@ -49,7 +47,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       for (x in 1:length(lon)) {
         print(paste("Margin FPOT - Lon:",x,"Lat",y))
         Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
-        paramsXsPOT<-margfit(Xs.ref$var,above,r = r,cmax = cmax)
+        paramsXsPOT<-margfit(Xs.ref$var,proba,r = r,cmax = cmax)
         gamma2D <- c(gamma2D,paramsXsPOT$shape)
         scale2D <- c(scale2D,paramsXsPOT$scale)
         stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
@@ -100,7 +98,6 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       parallelfit <- function() {
         require(ncdf4)
         require(evd)
-        require(fExtremes)
         # Tag for sent messages : 
         # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
         # Tag for receive messages :
@@ -121,7 +118,8 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
             tryCatch({
               x<-as.numeric(unlist(task))
               Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
-              paramsXsPOT<-margfit(Xs.ref$var,above,r=r,cmax=cmax)
+              q <- as.numeric(quantile(Xs.ref$var,proba))
+              paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
                            stdrrGamma1D=paramsXsPOT$std.err[1],stdrrScale1D=paramsXsPOT$std.err[2],
                            thres1D=as.numeric(paramsXsPOT$threshold))
@@ -149,7 +147,7 @@ createMarginScaleParameters <- function (file,var,above,r,cmax,tmpfitinfo.file,g
       mpi.bcast.Robj2slave(file)
       mpi.bcast.Robj2slave(var)
       mpi.bcast.Robj2slave(grid)
-      mpi.bcast.Robj2slave(above)
+      mpi.bcast.Robj2slave(proba)
       mpi.bcast.Robj2slave(r)
       mpi.bcast.Robj2slave(env.cmax)
       mpi.bcast.Robj2slave(env.consecutivebelow)
