@@ -50,6 +50,7 @@ if (env.grid) {
   env.ref.t0 <- c(as.numeric(properties["t0.ref.lon"]),as.numeric(properties["t0.ref.lat"]))
 } else {
   if (is.na(as.numeric(properties["t0.ref.node"]))) stop("if not gridded Property: 't0.ref.node' cannot be NULL")
+  warning("t0.ref.node should be the index of the node dimension, not the value of the node variable")
   env.ref.t0 <- c(as.numeric(properties["t0.ref.node"]))
 }
 

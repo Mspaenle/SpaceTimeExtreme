@@ -96,8 +96,10 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
 # Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
 # 2 = the within-cluster maxima at reference station reach the targeted ym return value
+# 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
+# 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 # Return values in a vector
-computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, grid) {
+computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, tmpfitinfo.file, ref.hyperslab ,grid) {
   t0.i <- NULL
   gamma <- paramsXsPOT$shape
   a <- paramsXsPOT$scale
@@ -113,12 +115,46 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
     t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
     t0.i <- rep(t0,length(Xs.1))
   } else if (t0.mode == 2) {
-    # Find t0i to have in each storm cluster the largest within-maxima equal to
+    # Find t0i to have in each storm the largest within-maxima at ref.location equal to
     # the return level corresponding to env.returnperiod
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = ref.t0, grid = grid)
+      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      t0.i <- c(t0.i,t0)
+    }
+  } else if (t0.mode == 3) {
+    # Find t0i to have in each storm the largest within-maxima of the hyperslab where the actual storm is detected from
+    # equal to the return level corresponding to env.returnperiod  
+    t0.i <- NULL
+    t0 <- NULL
+    for (i in 1:length(Xs.1)) {
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL, grid = grid)
+      
+      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, hyperslabs = ref.hyperslab, grid = grid)
+      infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
+      a <- as.numeric(unlist(infos["a"]))
+      b.t <- as.numeric(unlist(infos["b.t"]))
+      gamma <- as.numeric(unlist(infos["gamma"]))
+      
+      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      t0.i <- c(t0.i,t0)
+    }
+  } else if (t0.mode == 4) {
+    # Find t0i to have in each storm the largest within-maxima equal to
+    # the return level corresponding to env.returnperiod
+    t0.i <- NULL
+    t0 <- NULL
+    for (i in 1:length(Xs.1)) {
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL, hyperslabs = NULL, grid = grid)
+      
+      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
+      infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
+      a <- as.numeric(unlist(infos["a"]))
+      b.t <- as.numeric(unlist(infos["b.t"]))
+      gamma <- as.numeric(unlist(infos["gamma"]))
+      
       t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
       t0.i <- c(t0.i,t0)
     }
@@ -128,20 +164,79 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
   return(t0.i)
 }
 
-# Return max of a file
-ncdfmax <- function (file, var, index.ref.location = NULL, grid=TRUE) {
-  tmp.char <- paste(workdirtmp,"/ncdfmax.nc",sep="")
-  if (!is.null(index.ref.location)) { 
-    if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
-    else hyperslab <- paste("-d node,",index.ref.location[1],sep="")
+#return location of the given max 
+retrieveLocationMax <- function (file, var, max, grid =TRUE) {
+  tmp.char <- paste(workdirtmp,"/maxlocation.nc",sep="")
+  location<-NULL
+  if (grid) {
+    # TODO
+    stop("retrieveLocationMax has not been yet implemented for grid=TRUE option")
+  } else {
+    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node-1;' ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
+    
+    tmp.nc<-nc_open(tmp.char)
+    node<-ncvar_get(tmp.nc,"foo")
+    nc_close(tmp.nc)
+    location <- c(node)
+  }    
+  return(location)
+}
+
+#return gpdfitinfo estimated from margin fit corresponding to the given location
+retrieveFitInfo <- function (file, location , grid = TRUE) {
+  tmp.char <- paste(workdirtmp,"/retrievefitInfos.nc",sep="")
+  infos<-list()
+  if (!grid) {
+    system(command = paste(env,"ncks -O -d node,",location[1]," -v u_s,sigma_s,gamma_s ",file," ",tmp.char,sep=""))
+    tmp.nc<-nc_open(tmp.char)
+    u_s<-ncvar_get(tmp.nc,"u_s")
+    gamma_s<-ncvar_get(tmp.nc,"gamma_s")
+    sigma_s<-ncvar_get(tmp.nc,"sigma_s")
+    nc_close(tmp.nc)
+    infos<-list("a"=sigma_s,"b.t"=u_s,"gamma"=gamma_s)
+  } else {
+    stop("retrieveA has not been yet implemented for grid=TRUE option")
   }
-  test <- 0
-  system(command = paste(env,"ncwa -4 -O -b -y max -v",var,hyperslab,file,tmp.char))
-  tmp.nc<-nc_open(tmp.char)
-  max<-ncvar_get(tmp.nc,var)
-  nc_close(tmp.nc)
   
+  return(infos)
+}
+
+# Return max of a file
+ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,grid=TRUE) {
+  tmp.char <- paste(workdirtmp,"/ncdfmax.nc",sep="")
+  max <- NULL
+  if (is.null(hyperslabs)) {
+    hyperslab <- ""
+    if (!is.null(index.ref.location)) { 
+      if (grid) hyperslab <- paste("-d longitude,",index.ref.location[1]," -d latitude,",index.ref.location[2],sep="") 
+      else hyperslab <- paste("-d node,",index.ref.location[1],sep="")
+    }
+    test <- 0
+    system(command = paste(env,"ncwa -4 -O -b -y max -v",var,hyperslab,file,tmp.char))
+    tmp.nc<-nc_open(tmp.char)
+    max<-ncvar_get(tmp.nc,var)
+    nc_close(tmp.nc)
+  } else {
+    file.hyperslabs <- createhyperslabsfiles(file,var,hyperslabs)
+    tmp.remain <- paste(workdirtmp,"/ncdfmaxremain.nc",sep="")
+    max <- NULL
+    for (j in 1:length(file.hyperslabs)) {
+      system(command = paste(env,"ncks -4 -O ",files.hyperslabs[j],tmp.remain))
+      system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
+      
+      tmp.nc<-nc_open(tmp.char)
+      new.max<-ncvar_get(tmp.nc,var)
+      nc_close(tmp.nc)
+      print(paste("new.max :",new.max,"; max:",max))      
+      if (is.null(max) || new.max > max) tmax <- new.tmax
+    }
+  }
+  
+  if (is.null(max)) warning("ncdf max return a null value, please verify !!")
   return(max)
+  
+
 }
 
 # Find and store Empirical functions in a 1D list

@@ -62,10 +62,12 @@ source("deHaanLifter.R")
 # 3/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
 # 2 = the within-cluster maxima at reference station reach the targeted ym return value
+# 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
+# 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 print("Compute t0.i")
 t0.i <- computetzeroi(Xs.1,env.var,env.t0.mode,paramsXsPOT,
                       env.consecutivebelow,env.obsperyear,
-                      env.m.returnperiod,env.cmax,env.ref.t0,env.grid)
+                      env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file,ref.hyperslab,env.grid)
 
 #------------------------------------------------------------------------------#
 # Find out if we need local empirical distribution function. If so, compute them
