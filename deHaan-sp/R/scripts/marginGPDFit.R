@@ -118,6 +118,8 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
             tryCatch({
               x<-as.numeric(unlist(task))
               Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
+              print("proba")
+              str(proba)
               q <- as.numeric(quantile(Xs.ref$var,proba))
               paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
