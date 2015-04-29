@@ -7,7 +7,7 @@ margfit <- function (data,quantile,r=1,cmax=FALSE) {
   #find parameters
   fit<-fpot(data,threshold=quantile,r=r,cmax=cmax)
   
-  return(list(threshold=threshold,
+  return(list(threshold=as.numeric(fit$threshold),
               scale=as.numeric(fit$estimate['scale']),
               shape=as.numeric(fit$estimate['shape']),
               std.err=fit$std.err))
