@@ -127,9 +127,10 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
                            thres1D=as.numeric(paramsXsPOT$threshold))
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
-              result<-list(node=x,gamma1D=-9999,scale1D=-9999,
+              paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax,stderr=FALSE)
+              result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
                            stdrrGamma1D=-9999,stdrrScale1D=-9999,
-                           thres1D=-9999)
+                           thres1D=as.numeric(paramsXsPOT$threshold))
               mpi.send.Robj(result,0,4) 
             } else {
               mpi.send.Robj(result,0,2)
@@ -150,6 +151,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       mpi.bcast.Robj2slave(var)
       mpi.bcast.Robj2slave(grid)
       mpi.bcast.Robj2slave(proba)
+      mpi.bcast.Robj2slave(env.p)
       mpi.bcast.Robj2slave(r)
       mpi.bcast.Robj2slave(env.cmax)
       mpi.bcast.Robj2slave(env.consecutivebelow)
