@@ -125,7 +125,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
                            thres1D=as.numeric(paramsXsPOT$threshold))
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
-              paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax,stderr=FALSE)
+              paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax,std.err = FALSE)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
                            stdrrGamma1D=-9999,stdrrScale1D=-9999,
                            thres1D=as.numeric(paramsXsPOT$threshold))
