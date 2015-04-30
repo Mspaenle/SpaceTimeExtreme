@@ -192,7 +192,10 @@ getMaxTimeValue <- function(var, file, index.ref.location = NULL ,grid = TRUE, h
         new.max<-ncvar_get(tmp.nc,var)
         nc_close(tmp.nc)
         print(paste("new.max :",new.max,"; max:",max))      
-        if (is.null(max) || new.max > max) tmax <- new.tmax
+        if (is.null(max) || new.max > max) {
+          tmax <- new.tmax
+          max <- new.max
+        }
       }
     }
   }
