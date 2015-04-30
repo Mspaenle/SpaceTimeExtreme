@@ -130,9 +130,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
-      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL, grid = grid)
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
-      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, hyperslabs = ref.hyperslab, grid = grid)
+      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
       infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
       a <- as.numeric(unlist(infos["a"]))
       b.t <- as.numeric(unlist(infos["b.t"]))
