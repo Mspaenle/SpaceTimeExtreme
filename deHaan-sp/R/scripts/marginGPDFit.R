@@ -47,7 +47,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       for (x in 1:length(lon)) {
         print(paste("Margin FPOT - Lon:",x,"Lat",y))
         Xs.ref <- Xs(file,var,index.location=c(x,y),grid=grid)
-        paramsXsPOT<-margfit(Xs.ref$var,proba,r = r,cmax = cmax)
+        paramsXsPOT<-margfit(Xs.ref$var,1-proba,r = r,cmax = cmax)
         gamma2D <- c(gamma2D,paramsXsPOT$shape)
         scale2D <- c(scale2D,paramsXsPOT$scale)
         stdrrGamma2D <- c(stdrrGamma2D,paramsXsPOT$std.err[1])
@@ -118,14 +118,14 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
             tryCatch({
               x<-as.numeric(unlist(task))
               Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
-              q <- as.numeric(quantile(Xs.ref$var,proba))
+              q <- as.numeric(quantile(Xs.ref$var,1-proba))
               paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
                            stdrrGamma1D=paramsXsPOT$std.err[1],stdrrScale1D=paramsXsPOT$std.err[2],
                            thres1D=as.numeric(paramsXsPOT$threshold))
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
-              paramsXsPOT<-margfit(Xs.ref$var,quantile = q,r=r,cmax=cmax,std.err = FALSE)
+              paramsXsPOT<-margfit(Xs.ref$var,quantile = 1-proba,r=r,cmax=cmax,std.err = FALSE)
               result<-list(node=x,gamma1D=paramsXsPOT$shape,scale1D=paramsXsPOT$scale,
                            stdrrGamma1D=-9999,stdrrScale1D=-9999,
                            thres1D=as.numeric(paramsXsPOT$threshold))

@@ -17,7 +17,7 @@ Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=env.grid)
 # 2/ GPD fit at reference station and store marginal results
 print("Reference (t0) location GPD Fit")
 source("marginGPDFit.R")
-quantile <- as.numeric(quantile(Xs.ref$var,env.p))
+quantile <- as.numeric(quantile(Xs.ref$var,1-env.p))
 paramsXsPOT<-margfit(Xs.ref$var, quantile, r=env.consecutivebelow, cmax=env.cmax)
 ref.threshold <- as.numeric(paramsXsPOT$threshold)
 #------------------------------------------------------------------------------#
