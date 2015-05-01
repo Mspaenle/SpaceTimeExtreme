@@ -222,7 +222,7 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
     tmp.remain <- paste(workdirtmp,"/ncdfmaxremain.nc",sep="")
     max <- NULL
     for (j in 1:length(file.hyperslabs)) {
-      system(command = paste(env,"ncks -4 -O ",files.hyperslabs[j],tmp.remain))
+      system(command = paste(env,"ncks -4 -O ",file.hyperslabs[j],tmp.remain))
       system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
       
       tmp.nc<-nc_open(tmp.char)
