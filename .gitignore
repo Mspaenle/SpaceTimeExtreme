@@ -43,6 +43,7 @@ Thumbs.db
 *gmt.history
 *.ps
 *.png
+*.conf
 # NETCDF FILES #
 ################
 *.nc
