@@ -67,23 +67,32 @@ if [ "${HASBASELINE}" = false ] ; then
 			# gmt greenspline ${work}/isobath.xy ${envelopelon} -I${EQUIDIST} -Cn15 -St0.95 -G${work}/baseline_splineX 
 			# gmt greenspline ${work}/isobath.yx ${envelopelat} -I${EQUIDIST} -Cn15 -St0.95 -G${work}/baseline_splineY 
 
-			awk '{print NR,$1}' ${work}/isobath.xyz > ${work}/isobath.ix
-			awk '{print NR,$2}' ${work}/isobath.xyz > ${work}/isobath.iy
-			max=82
+			gmt blockmean ${work}/isobath.xyz ${envelope} -I20k -V > ${work}/isobathblockmean.xyz
+			log $? "blockmean isobath"
+			sort ${work}/isobathblockmean.xyz > ${work}/isobathblockmean-sorted.xyz
+
+			ed -s work/isobathblockmean-sorted.xyz <<< $'4m0\nw'
+			log "warning" "trick to sort out the isobath points"
+
+			awk '{print NR,$1}' ${work}/isobathblockmean-sorted.xyz > ${work}/isobath.ix
+			awk '{print NR,$2}' ${work}/isobathblockmean-sorted.xyz > ${work}/isobath.iy
+			max=$(( $(wc -l ${work}/isobathblockmean-sorted.xyz | awk '{print $1}') ))
 			min=1
-			nb=100
-			inc=$(echo "($max-$min) / $nb" | bc -l)
-			# envelopei=$(gmt minmax -I0.1 ${work}/isobath.ix |awk 'BEGIN {FS="/"} {print $1"/"$2 }' )
-			envelopei=-R1/82
-			gmt greenspline ${work}/isobath.iy ${envelopei} -I${inc} -Cn5 -St0.95 -G${work}/baseline_splineY 
-			gmt greenspline ${work}/isobath.ix ${envelopei} -I${inc} -Cn5 -St0.95 -G${work}/baseline_splineX 
+			# nb=200
+			nbpersec=10
+			# inc=$(echo "$max / $nb" | bc -l)
+			inc=$(echo "1 / $nbpersec" | bc -l)
+			envelopei=-R${min}/${max}
+			gmt greenspline ${work}/isobath.iy ${envelopei} -I${inc} -St0.95 -G${work}/baseline_splineY
+			gmt greenspline ${work}/isobath.ix ${envelopei} -I${inc} -St0.95 -G${work}/baseline_splineX
 
 			# gmt greenspline ${work}/isobath.xyz ${envelopelon} -I0.01 -Cn10 -St0.95 -G${work}/baseline_spline -V
 			log $? "greenspline"
 
 			# gmt grdtrack ${work}/isobath.xyz -Ar -C0.1/0.01/0.05 -G${bathy} ${envelope}| awk '$0 ~ /^>/ {print $7}' | sed 's/\// /g' > ${work}/track.xyz
 			# log $? "grdtrack"
-			paste ${work}/baseline_splineX  ${work}/baseline_splineY | awk '{print $2,$4}' > ${work}/baseline_spline
+			join ${work}/baseline_splineX ${work}/baseline_splineY | awk '{print $2,$3}' > ${work}/baseline_spline
+
 			log $? "baseline created";;
 		3 )
 			echo "TODO";;
@@ -378,11 +387,16 @@ if [ "${GMT}" = true ]; then
 	log $? "grdcontour"
 
 	gmt psxy ${work}/isobath.xyz $projection $envelope -S+0.4c -W1p,red -P -O -K >> ${outfile}.ps
-	gmt psxy ${work}/baseline_spline $projection $envelope -S+0.4c -W1p,blue -P -O -K >> ${outfile}.ps
+	gmt psxy ${work}/baseline_spline $projection $envelope -S+0.4c -W1p,black -P -O -K >> ${outfile}.ps
+
+	if [ -f ${work}/isobathblockmean.xyz ] ; then 
+		gmt psxy ${work}/isobathblockmean.xyz $projection $envelope -S+0.4c -W1p,blue -P -O -K >> ${outfile}.ps
+	fi
+
 	# gmt psxy ${work}/track.xyz $projection $envelope -S+0.4c -W1p,black -P -O -K >> ${outfile}.ps
 	for profile in $(ls ${work}/profiletrack*) ; do
 		tail -n +2 $profile > ${work}/profiletmp
-		gmt psxy ${work}/profiletmp $projection $envelope -Sp0.1c -W0.5p,black -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/profiletmp $projection $envelope -Sp0.1c -W0.5p,brown -P -O -K >> ${outfile}.ps
 	done
 	log $? "psxy"
 
