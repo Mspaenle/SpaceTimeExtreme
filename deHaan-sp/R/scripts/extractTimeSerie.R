@@ -1,4 +1,5 @@
 require(ncdf4)
+
 # Xs function aims to extract the time serie of a variable contained in FILE (netcdf) at location LOCATION
 #
 # - INDEX.LOCATION attribute is the index in the grid (see GRID).
