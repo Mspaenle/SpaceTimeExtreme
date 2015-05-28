@@ -18,6 +18,7 @@ double L(double *x, double *n, double *theta) {
 	for (i = 0; i < (*n); i++) { 
 		val += log(1 + theta[2] * ((x[i]-theta[0])/theta[1]));
 	}
+	
 	return (coef*val);
 }
 

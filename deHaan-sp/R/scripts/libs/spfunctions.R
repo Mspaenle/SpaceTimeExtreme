@@ -61,6 +61,6 @@ rsp <- function(n,theta) {
   xi<-theta[3]
   res<-NULL
   uni<-runif(n,0,1)
-  res<- (sigma/xi) * ( 1- (1-uni)^xi * (1-xi*mu/sigma) )
+  res<- (sigma/xi) * ( ( 1 - uni)^(-xi) -1 ) + mu
   return(res)
 }
