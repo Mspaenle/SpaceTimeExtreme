@@ -14,9 +14,9 @@ export BLOCKMEANINC=18000
 ######################################
 ## NORMAL to BASELINE CONFIGURATION ##
 ######################################
-export HASPROFILE=false
+export HASPROFILE=true
 export ORTHOLENGTH=25000
-export ORTHONBPOINTS=80
+export ORTHONBPOINTS=10
 
 ##########################
 ## Shoreline extraction ##
@@ -28,17 +28,19 @@ export PATHTOGSHHGBIN=/Users/rchailan/Applications/gshhg/gshhg-bin-2.3.4/gshhs_f
 ## Geometry computations ##
 ###########################
 export HASGEOMETRY=true
+export POLYGONINC=3000
 
 #########################
 ## Extract storms data ##
 #########################
-export HASEXTRACTED=true
+export HASEXTRACTED=false
 export NEARNEIGHBORINC=0.01
 export NEARNEIGHBORS=5k
 export NEARNEIGHBORN=4/2
 
 export STORMSDIR=inputs/storms
-export VARIABLES="hs_uplifted dir fp"
+#export VARIABLES="hs_uplifted dir fp"
+export VARIABLES="dir"
 
 ################
 ## GMT PLOTS  ##
