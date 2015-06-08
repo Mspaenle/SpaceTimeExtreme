@@ -16,16 +16,17 @@ sp.fit <- function(data, threshold, cmax=FALSE, r=1, ulow=-Inf, rlow=1,
 	  exceed <- as.double(data[high])
 	}
   
-  if (!is.null(start)) {theta <- start} else {theta <- c(mu=1,sigma=1,shape=1)}
+  if (!is.null(start)) {theta <- start} else {theta <- c(mu=0,sigma=1,shape=0.5)}
   
   if (optimfn == "optim") {
     control$maxit <- itnmax
-    control$fnscale=-1 #to make it a maximizing resolution
+#     control$fnscale=-1 #to make it a maximizing resolution
     res<-optim(par = theta,fn = sp.likelihood,exceed = exceed, 
                lower = lower, upper= upper, method = method,
                hessian = hessian, control = control)
   } else {
-    control$maximize <- TRUE
+#     control$maximize <- TRUE
+    control$maximize <- FALSE
     res<-optimx(par = theta, fn = sp.likelihood, exceed = exceed, 
                 lower = lower, upper= upper, method = method, itnmax = itnmax, 
                 hessian = hessian, control = control)
@@ -34,13 +35,17 @@ sp.fit <- function(data, threshold, cmax=FALSE, r=1, ulow=-Inf, rlow=1,
 }
 
 #return the likelihood with the given theta vector of parameters (mu,sigma,shape)
-sp.likelihood <- function(exceed,theta) {
+sp.likelihood <- function(theta,exceed) {
   val <- 0
-	tmp<-.C("spLikelihood",x = as.double(exceed), n = as.double(length(exceed)), 
-          theta = as.double(theta), val = as.double(val))
+	tmp<-.C("spLikelihood",theta = as.double(theta),x = as.double(exceed), n = as.double(length(exceed)), val = as.double(val))
   return(tmp$val)
 }
 
+
+sp.print <- function(theta) {
+  tmp<-.C("printTheta",as.double(theta));
+  str(tmp)
+}
 
 # Function to read and transform format of ww3 time to POSIXct
 readWW3OunpTime <- function(pathOunp){
