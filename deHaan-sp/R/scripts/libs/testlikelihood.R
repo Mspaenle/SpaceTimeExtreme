@@ -24,7 +24,7 @@ if (data_load) {
 # theta<-c(2,3,0.5)
 # sp.print(theta)
 n<-1000
-theta<-c(0,3,0.5)
+theta<-c(0,3,-0.3)
 d<-rsp(n,theta)
 
 amax<-function(theta,x) {
@@ -36,29 +36,36 @@ amax<-function(theta,x) {
     val<-0
     if (theta[3] > 0) {
       for (i in 1:n) {
-        if ( (x[i] > theta[1]-theta[2]/theta[3]) & (x[i] > theta[1]) )
+        if (x[i] > theta[1]-theta[2]/theta[3]) 
         {val <- val+log(1 + theta[3] * ((x[i]-theta[1])/theta[2]))}
       }
     } else if (theta[3] < 0) {
       for (i in 1:n) {
-        if ( (x[i] < (theta[1]-theta[2]/theta[3]) ) & (x[i] > theta[1]) )
+        if (x[i] < (theta[1]-theta[2]/theta[3]) ) 
         {val <- val+log(1 + theta[3] * ((x[i]-theta[1])/theta[2]))}
       }
+    }    
+    if (val != 0) {
+      l<-n * log(theta[2])  + coef*val
+      print(paste("likelihood amax:",l,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3]))
+      return (-n * log(theta[2])  - coef*val)
+    } else {
+      print(paste("likelihood amax:",-99999999,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3]))
+      return (-9999999)
     }
-#     l<-n * log(theta[2])  + coef*val
-#     print(paste("likelihood amax:",l,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3]))
-    return (-n * log(theta[2])  - coef*val)
   } 
 }
 
-# resNLM<-NULL
-# resNLM<-optim(par = c(0,1*10^(-4),1),fn = amax,x=d,hessian = F, control = list(fnscale=-1))
-# resNLM<-optim(par = theta,fn = amax,x=d,hessian = F, control = list(fnscale=-1))
 res<-NULL
-res<-optim(par = c(0,1*10^(-4),1),fn = amax,x=d,hessian = F, lower=c(Inf,1*10^(-4),-1),control = list(fnscale=-1),method="L-BFGS-B")
+# res<-optim(par = c(0,1,1),fn = amax,x=d,hessian = F, lower=c(-Inf,1*10^(-4),-Inf),upper=c(min(d),Inf,Inf),
+#            control = list(fnscale=-1),method="L-BFGS-B")
+res<-optim(par = c(0,1,1),fn = amax,x=d,hessian = F, lower=c(-Inf,1*10^(-4),-Inf),upper=c(min(d),Inf,Inf),
+           control = list(fnscale=-1),method="L-BFGS-B")
+print(theta)
+print(res$par)
 
-res<-optimx(par = c("mu"=0,"sigma"=1*10^(-4),"xi"=1),fn = amax,x=d,hessian = F, lower=c(0,1*10^(-4),-1),
-            control=list(all.methods=TRUE, save.failures=TRUE, trace=0,maximize=TRUE),method="L-BFGS-B")
+#     l<-n * log(theta[2])  + coef*val
+#     print(paste("likelihood amax:",l,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3]))
 
-print(paste("theta:",theta))
-print(res)
+# res<-optimx(par = c("mu"=0,"sigma"=1*10^(-4),"xi"=1),fn = amax,x=d,hessian = F, lower=c(Inf,1*10^(-4),-1),
+#             control=list(all.methods=TRUE, save.failures=FALSE, trace=0,maximize=TRUE))
