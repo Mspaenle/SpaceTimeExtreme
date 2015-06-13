@@ -25,6 +25,7 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year) {
 
 # actual transformation of data to standard scale
 x.standardScale <- function (x,u_s,gamma_s,sigma_s) {
+  print(paste("x:",x," u_s:",u_s," sigma_s:",sigma_s," gamma_s",gamma_s," scaled:",(1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s),sep=""))
   return ( (1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s) )
 }
 
@@ -105,7 +106,7 @@ parallelStandardization <- function() {
         gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'),start = c(x), count = c(1)))
         
         scaled<-x.standardScale(Xs.ref$var,u_s=u_s,gamma_s=gamma_s,sigma_s=sigma_s)
-        result<-list(node=x,scaledvar=scaled)
+        result<-list(node=x,scaledvar=scaled,u_s=u_s)
         
         nc_close(ncfile)
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
@@ -295,7 +296,8 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
         #message contains results. Deal with it.
         res<-message
         scaledvar1D<-res$scaledvar
-        threshold<-as.numeric(quantile(scaledvar1D,0.99))
+#         threshold<-as.numeric(quantile(scaledvar1D,0.99))
+        threshold <- as.numeric(res$u_s)
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
         
