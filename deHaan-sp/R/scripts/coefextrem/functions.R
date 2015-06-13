@@ -299,7 +299,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
         
-        ncvar_put(out.nc,varnc,scaledvar1D,start=c(1,res$node),count=c(-1,1))
+        ncvar_put(out.nc,varnc,scaledvar1D,start=c(res$node,1),count=c(1,-1))
         ncvar_put(out.nc,thresholdvar,threshold,start=c(res$node),count=c(1))
         
         print(paste("Put scaled data - Node:",res$node))
