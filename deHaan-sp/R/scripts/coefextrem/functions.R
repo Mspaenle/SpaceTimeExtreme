@@ -124,7 +124,7 @@ parallelStandardization <- function() {
 }
 
 # convert values inside infile to unit frechet scale
-unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=TRUE,r=6,year) {
+unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=TRUE,r=6,year=2012) {
   require(Rmpi)
   prec="single"
   missval=1.e30
@@ -226,7 +226,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
   }
   
   # extract ieme year of initial file
-  year <- year
+  year <- year-1960
   start <- (year-1)*24*365
   end <- year*24*365
   system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmp.nc.path ))

@@ -7,6 +7,7 @@ infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isUnitFrechet=FALSE
 maxfile="../../../work/max_Yt_Ut.nc"
 variables=c("hs","t01")
+year=2012
 
 # 1/ construct df of Y_t,u_t, t \in T
 if (!isMaxFile) {
