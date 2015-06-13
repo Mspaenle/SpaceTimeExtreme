@@ -1,7 +1,7 @@
 ### EXTREMAL COEFFICIENT BETWEEN ################
 # {Y_t , Y_{t+delta}}, where Y_t = max{Y_{i,t}} #
 #################################################
-
+source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isUnitFrechet=FALSE
