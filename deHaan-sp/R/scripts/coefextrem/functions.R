@@ -299,10 +299,13 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
         
-        ncvar_put(out.nc,varnc,scaledvar1D,start=c(res$node,1),count=c(1,-1))
-        ncvar_put(out.nc,thresholdvar,threshold,start=c(res$node),count=c(1))
+        str(scaledvar1D)
+        str(res$node)
+        str(as.numeric(res$node))
+        ncvar_put(nc = out.nc,varid = varnc,vals = scaledvar1D,start=c(as.numeric(res$node),1),count=c(1,-1))
+        ncvar_put(nc = out.nc,varid = thresholdvar,vals = threshold,start=c(as.numeric(res$node)),count=c(1))
         
-        print(paste("Put scaled data - Node:",res$node))
+        print(paste("Put scaled data - Node:",as.numeric(res$node)))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
