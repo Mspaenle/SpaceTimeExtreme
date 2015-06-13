@@ -99,13 +99,16 @@ parallelStandardization <- function() {
       tryCatch({
         x<-as.numeric(unlist(task))
         Xs.ref <- Xs(infile,var,node=c(x))
-        u_s <- as.numeric(ncvar_get(nc = fitinfos,varid = paste(var,"u_s",sep='_'),start = c(x), count = c(1)))
-        sigma_s <- as.numeric(ncvar_get(nc = fitinfos,varid = paste(var,"sigma_s",sep='_'),start = c(x), count = c(1)))
-        gamma_s <- as.numeric(ncvar_get(nc = fitinfos,varid = paste(var,"gamma_s",sep='_'),start = c(x), count = c(1)))
+        
+        ncfile<-nc_open(filename = fitinfos,readunlim = FALSE)
+        u_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"u_s",sep='_'),start = c(x), count = c(1)))
+        sigma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"sigma_s",sep='_'),start = c(x), count = c(1)))
+        gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'),start = c(x), count = c(1)))
         
         scaled<-x.standardScale(Xs.ref$var,u_s=u_s,gamma_s=gamma_s,sigma_s=sigma_s)
         result<-list(node=x,scaledvar=scaled)
         
+        nc_close(ncfile)
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
       if (bug) {
         print(paste("BUG at node",x))
