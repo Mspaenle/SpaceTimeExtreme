@@ -25,7 +25,7 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year) {
 
 # actual transformation of data to standard scale
 x.standardScale <- function (x,u_s,gamma_s,sigma_s) {
-  print(paste("x:",x," u_s:",u_s," sigma_s:",sigma_s," gamma_s",gamma_s," scaled:",(1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s),sep=""))
+#   print(paste("x:",x," u_s:",u_s," sigma_s:",sigma_s," gamma_s",gamma_s," scaled:",(1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s),sep=""))
   return ( (1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s) )
 }
 
@@ -218,9 +218,9 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
     str(scale1D)
     str(gamma1D)
     
-    ncvar_put(tmp.nc,varThres,thres1D,start=c(1),count=c(-1))
-    ncvar_put(tmp.nc,varGamma,gamma1D,start=c(1),count=c(-1))
-    ncvar_put(tmp.nc,varScale,scale1D,start=c(1),count=c(-1))
+    ncvar_put(tmp.nc,varThres,thres1D)
+    ncvar_put(tmp.nc,varGamma,gamma1D)
+    ncvar_put(tmp.nc,varScale,scale1D)
     
     # append tmpfile to output file
     print(paste("Var",var,"Append tmpfile"))
@@ -305,9 +305,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
         
-#         str(scaledvar1D)
-#         str(res$node)
-#         str(as.numeric(res$node))
+
         ncvar_put(nc = out.nc,varid = varnc,vals = scaledvar1D,start=c(as.numeric(res$node),1),count=c(1,-1))
         ncvar_put(nc = out.nc,varid = thresholdvar,vals = threshold,start=c(as.numeric(res$node)),count=c(1))
         
