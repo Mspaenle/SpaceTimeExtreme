@@ -218,10 +218,11 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
     str(scale1D)
     str(gamma1D)
     
-    ncvar_put(tmp.nc,varThres,thres1D)
-    ncvar_put(tmp.nc,varGamma,gamma1D)
-    ncvar_put(tmp.nc,varScale,scale1D)
+    ncvar_put(tmp.nc,varThres,thres1D,start=c(1),count=c(-1), verbose = TRUE)
+    ncvar_put(tmp.nc,varGamma,gamma1D,start=c(1),count=c(-1), verbose = TRUE)
+    ncvar_put(tmp.nc,varScale,scale1D,start=c(1),count=c(-1), verbose = TRUE)
     
+    nc_close(tmp.nc)
     # append tmpfile to output file
     print(paste("Var",var,"Append tmpfile"))
     if (file.exists(fitinfos)) {
