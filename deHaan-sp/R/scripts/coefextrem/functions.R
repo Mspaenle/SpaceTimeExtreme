@@ -38,8 +38,7 @@ marginGPDfit <- function (x,quantile=0.99,cmax=TRUE,r=6, std.err = TRUE) {
   
   return(list(threshold=as.numeric(fit$threshold),
               scale=as.numeric(fit$estimate['scale']),
-              shape=as.numeric(fit$estimate['shape']),
-              std.err=fit$std.err))
+              shape=as.numeric(fit$estimate['shape']) ))
 }
 
 # parallel fit
@@ -215,6 +214,10 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
     if (file.exists(tmp.nc.path)) {file.remove(tmp.nc.path)}
     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
     
+    str(thres1D)
+    str(scale1D)
+    str(gamma1D)
+    
     ncvar_put(tmp.nc,varThres,thres1D,start=c(1),count=c(-1))
     ncvar_put(tmp.nc,varGamma,gamma1D,start=c(1),count=c(-1))
     ncvar_put(tmp.nc,varScale,scale1D,start=c(1),count=c(-1))
@@ -229,11 +232,12 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
   }
   
   # extract ieme year of initial file
+  tmp.nc.path2 <- "../../../work/tmp2.nc"
   year <- year-1960
   start <- (year-1)*24*365
   end <- year*24*365
-  system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmp.nc.path ))
-  infile<-tmp.nc.path
+  system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmp.nc.path2 ))
+  infile<-tmp.nc.path2
   
   in.nc <- nc_open(infile,readunlim = FALSE)
   node<-ncvar_get(in.nc,"node")
@@ -301,9 +305,9 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.99,cmax=T
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
         
-        str(scaledvar1D)
-        str(res$node)
-        str(as.numeric(res$node))
+#         str(scaledvar1D)
+#         str(res$node)
+#         str(as.numeric(res$node))
         ncvar_put(nc = out.nc,varid = varnc,vals = scaledvar1D,start=c(as.numeric(res$node),1),count=c(1,-1))
         ncvar_put(nc = out.nc,varid = thresholdvar,vals = threshold,start=c(as.numeric(res$node)),count=c(1))
         
