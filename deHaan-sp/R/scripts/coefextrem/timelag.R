@@ -4,10 +4,11 @@
 source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
-isUnitFrechet=TRUE #local debug
+isUnitFrechet=FALSE
 
 maxfile="../../../work/max_Yt_Ut.nc"
 # maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+# isUnitFrechet=TRUE
 
 variables=c("hs","t01")
 year=2012
