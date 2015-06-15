@@ -4,8 +4,11 @@
 source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
-isUnitFrechet=FALSE
+isUnitFrechet=TRUE #local debug
+
 maxfile="../../../work/max_Yt_Ut.nc"
+# maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+
 variables=c("hs","t01")
 year=2012
 
@@ -22,5 +25,5 @@ if (!isMaxFile) {
 
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
