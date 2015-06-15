@@ -141,11 +141,9 @@ parallelStandardization <- function() {
         Xs.ref <- Xs(infile,var,node=c(x))
         
         ncfile<-nc_open(filename = fitinfos,readunlim = FALSE)
-        u_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"u_s",sep='_'), start = c(x), count = c(1)))
-        sigma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"sigma_s",sep='_'), start = c(x), count = c(1)))
-        gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'), start = c(x), count = c(1)))
-        
-        print(u_s,sigma_s,gamma_s)
+        u_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"u_s",sep='_'), start = x, count = 1))
+        sigma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"sigma_s",sep='_'), start = x, count = 1))
+        gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'), start = x, count = 1))
         
         scaled<-x.standardScale(Xs.ref$var, u_s = u_s, gamma_s = gamma_s, sigma_s = sigma_s)
         result<-list(node = x, scaledvar = scaled, u_s = u_s)
@@ -165,7 +163,6 @@ parallelStandardization <- function() {
   }
   #exiting
   mpi.send.Robj(junk,0,3)
-  
 }
 
 # convert values inside infile to unit frechet scale
@@ -270,7 +267,6 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
       file.copy(from = tmp.nc.path, to = fitinfos)
     }
   }
-  #close infile
   nc_close(in.nc)
   
   # extract ieme year of initial file
@@ -279,8 +275,10 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
   start <- floor((year-1)*24*365.25)
   end <- floor(year*24*365.25)
   system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmp.nc.path2))
+  
   infile<-tmp.nc.path2
   in.nc <- nc_open(infile,readunlim = FALSE)
+  
   node<-ncvar_get(in.nc,"node")
   time<-ncvar_get(in.nc,"time")
   dimNode <- ncdim_def("node", "count", node)
@@ -342,8 +340,6 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         res<-message
         
         scaledvar1D<-res$scaledvar
-#         threshold<-as.numeric(quantile(scaledvar1D,0.99))
-#         threshold <- as.numeric(res$u_s)
         threshold <- 1
 
         varnc<- paste(var,"scaled",sep="_")
@@ -351,17 +347,15 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         
         ncvar_put(nc = out.nc,varid = varnc,vals = scaledvar1D,start=c(as.numeric(res$node),1),count=c(1,-1))
         ncvar_put(nc = out.nc,varid = thresholdvar,vals = threshold,start=c(as.numeric(res$node)),count=c(1))
-        
-        print(paste("Put scaled data - Node:",as.numeric(res$node),"threshold:",threshold,"scaled data",str(scaledvar1D)))
+
+        print(paste("Put scaled data - Node:",as.numeric(res$node)))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
       }
     }
   }
-  
   # Close files
   nc_close(in.nc)
   nc_close(out.nc)
-  nc_close(tmp.nc.path)
 }
