@@ -276,11 +276,11 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
   # extract ieme year of initial file
   tmp.nc.path2 <- "../../../work/tmp2.nc"
   year <- year-1960
-  start <- (year-1)*24*365
-  end <- year*24*365
+  start <- floor((year-1)*24*365.25)
+  end <- floor(year*24*365.25)
   system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmp.nc.path2))
-  
-  in.nc <- nc_open(tmp.nc.path2,readunlim = FALSE)
+  infile<-tmp.nc.path2
+  in.nc <- nc_open(infile,readunlim = FALSE)
   node<-ncvar_get(in.nc,"node")
   time<-ncvar_get(in.nc,"time")
   dimNode <- ncdim_def("node", "count", node)
@@ -291,7 +291,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
   t01Scaled <- ncvar_def("t01_scaled",units.var,list(dimNode,dimTime),missval=missval,prec="float",compression = 9)      
   t01Thres <- ncvar_def("u_t01_scaled","",dimNode,missval=missval,prec="float",compression = 9)
   
-  out.nc <- nc_create(outfile,list(hsScaled,hsThres,t01Scaled,t01Thres))
+  out.nc <- nc_create(outfile,list(hsScaled,hsThres,t01Scaled,t01Thres),force_v4 = TRUE)
   
   #transform data to unit scale and store them in outfile
   for (k in 1:length(variables)) {
