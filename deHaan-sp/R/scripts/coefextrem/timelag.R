@@ -5,10 +5,14 @@ source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isUnitFrechet=FALSE
+lagMax=150
 
 maxfile="../../../work/max_Yt_Ut.nc"
-# maxfile="~/Desktop/toto/max_Yt_Ut.nc"
-# isUnitFrechet=TRUE
+
+#local debug
+maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+isUnitFrechet=TRUE
+isMaxFile=TRUE
 
 variables=c("hs","t01")
 year=2012
@@ -21,9 +25,10 @@ if (!isMaxFile) {
 }
 
 # 2/ for each lag k \in K, compute \hat{\theta} and add the result to a list
+data <- theta.estimator(maxfile,variables[1],lagMax)
 
 # 3/ finally plot the data after converting the list to a df.
-
+plot(data$lag,data$theta)
 
 # 7/ MPI handling
 # mpi.close.Rslaves()

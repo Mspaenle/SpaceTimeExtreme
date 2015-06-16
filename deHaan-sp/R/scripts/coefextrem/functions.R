@@ -359,3 +359,32 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
   nc_close(in.nc)
   nc_close(out.nc)
 }
+
+# estim extremal coefficient for time lag from 1 to lagMax
+theta.estimator <- function (maxfile,variable,lagMax) {
+  in.nc <- nc_open(filename = maxfile,readunlim = FALSE)
+  var<-variable
+  
+  Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
+  U.t <- ncvar_get(nc = in.nc, varid = paste("u",var,"t",sep="."), start = 1, count = -1)
+  
+  m.bool <- (Y.t > U.t)
+  Z.t <- pmax(Y.t,U.t)
+  
+  df <- NULL
+  m <- sum(m.bool==TRUE)  
+  for (k in 1:lagMax) {
+    s<-0
+    
+    for (j in 1:(length(Z.t)-k)) {
+      s <- s + ( 1 / max( Z.t[j:j+k] ) )
+    }
+    
+    theta<-m/s
+    
+    df <- rbind(df,data.frame("lag"=k,"theta"=theta))
+  }
+
+  nc_close(nc = in.nc)
+  return(df)
+}
