@@ -372,15 +372,17 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   Z.t <- pmax(Y.t,U.t)
   
   df <- NULL
+  
   m <- sum(m.bool==TRUE)  
   for (k in 1:lagMax) {
     s<-0
     
     for (j in 1:(length(Z.t)-k)) {
-      s <- s + ( 1 / max( Z.t[j:j+k] ) )
+#       s <- s + ( 1 / max( 1/Z.t[j:j+k] ) )
+      s <- s + ( 1 / max( 1/Z.t[j],1/Z.t[j+k] ) )
     }
     
-    theta<-m/s
+    theta<-m / s
     
     df <- rbind(df,data.frame("lag"=k,"theta"=theta))
   }
