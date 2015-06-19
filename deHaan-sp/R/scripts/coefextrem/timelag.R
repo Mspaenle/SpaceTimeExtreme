@@ -5,7 +5,7 @@ source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isUnitFrechet=FALSE
-lagMax=150
+lagMax=100
 
 maxfile="../../../work/max_Yt_Ut.nc"
 
