@@ -65,7 +65,7 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year) {
 
 # actual transformation of data to standard scale
 x.standardScale <- function (x,u_s,gamma_s,sigma_s) {
-  return ( (1 + gamma_s*( (x-u_s)/sigma_s ))^(1/gamma_s) )
+  return ( -1 / log( (1 + gamma_s*( (x-u_s)/sigma_s ))^(-1/gamma_s) ) )
 }
 
 # marginal fit
@@ -374,14 +374,14 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   df <- NULL
   m <- sum(m.bool==TRUE)  
   
-  m <- sum(1/Y.t)
-  m <- 0
+#   m <- sum(1/Y.t)
+#   m <- 0
   
   for (k in 1:lagMax) {
     s<-0
     
     for (j in 1:(length(Z.t)-k)) {
-      m <- m + 1
+#       m <- m + 1
       s <- s + ( 1 / max( Z.t[j], Z.t[j+k] ) )
 #       s <- s + ( min( 1/Z.t[j],1/Z.t[j+k] ) )
     }
