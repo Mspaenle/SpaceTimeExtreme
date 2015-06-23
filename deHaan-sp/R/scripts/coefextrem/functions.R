@@ -62,7 +62,7 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year,quantil
 
 # actual transformation of data to standard scale
 x.standardScale <- function (x,u_s,gamma_s,sigma_s) {
-  return ( -1 / log( (1 + gamma_s*( (x-u_s)/sigma_s ))^(-1/gamma_s) ) )
+  return ( -1 / log( ( 1 - (1 + gamma_s*( (x-u_s)/sigma_s ))^(-1/gamma_s) ) ) )
 }
 
 # marginal fit
