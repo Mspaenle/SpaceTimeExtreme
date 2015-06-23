@@ -61,8 +61,103 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year,quantil
 }
 
 # actual transformation of data to standard scale
-x.standardScale <- function (x,u_s,gamma_s,sigma_s) {
-  return ( -1 / log( ( 1 - (1 + gamma_s*( (x-u_s)/sigma_s ))^(-1/gamma_s) ) ) )
+x.standardScale <- function (x, u_s, mu_s, sigma_s, xi_s) {
+#   return ( -1 / log( ( 1 - (1 + gamma_s*( (x-u_s)/sigma_s ))^(-1/gamma_s) ) ) )
+  return ( (1 + xi_s*( (x-mu_s)/sigma_s ) )^(1/xi_s) )
+}
+
+# amin function to fit mu sigma xi
+amin<-function(theta,x) {
+  if ( (theta[2] < 1*10^(-4)) | (theta[3] == 0)) {
+    return (9999999)
+  } else {
+    c <- theta[1]-theta[2]/theta[3]
+    coef <- ( (1/theta[3]) + 1 )
+    n <- length(x)
+    val <- 0
+    j<-0
+    if (theta[3] > 0) {
+      for (i in 1:n) {
+        if (x[i] > c) {
+          val <- val+log(1 + theta[3] * ((x[i]-theta[1])/theta[2]))
+          j<-j+1
+        }
+      }
+    } else if (theta[3] < 0) {
+      for (i in 1:n) {
+        if (x[i] < c ) {
+          val <- val+log(1 + theta[3] * ((x[i]-theta[1])/theta[2]))
+          j<-j+1
+        }
+      }
+    }
+    if (j == length(x)) {
+      if (debug) {
+        l<-n * log(theta[2]) + coef*val
+        print(paste("nllh",l,"c:",c,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3],"j",j))
+      }
+      return (n * log(theta[2]) + coef*val)
+    } else {
+      if (debug){
+        print(paste("nllh:",99999999,"c:",c,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3],"j",j))
+      }
+      return (9999999)
+    }
+  }
+}
+
+# nlmin amin
+aminnlmin <- function (start) {
+  res <- nlminb(start = start, objective = amin, x=d,
+                hessian = F, lower=c(-Inf,1*10^(-4),-1),
+                upper=c(min(d),Inf,1), control = list(iter.max=1000))
+  if (res$convergence == 0) {
+    return (c(res$par,res$objective))
+  } else {
+    return (c(NA,NA,NA,NA))
+  }
+}
+
+# optim amin
+aminoptim <- function (start) {
+  res <- optim(par = start, fn = amin,x=d,hessian = F,
+               lower=c(-Inf,1*10^(-4),-1),
+               upper=c(min(d),Inf,1),control = list(maxit=1000),method="L-BFGS-B")
+  if (res$convergence == 0) {
+    return (c(res$par,res$value))
+  } else {
+    return (c(NA,NA,NA,NA))
+  }
+}
+
+# maginal GEV fit over threshold exceedance 
+maginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
+  threshold <- as.numeric(quantile(x,quantile))
+  if (cmax) {
+    exceed <- as.numeric(clusters(x, u = threshold, r = r, cmax = TRUE, keep.names = FALSE))
+  } else {
+    high <- (x > threshold) & !is.na(x)
+    exceed <- as.double(x[high])
+  }
+  
+  d <- exceed
+  
+  m <- matrix(0,5,3)
+  m[,1] <- rep(1,5)
+  m[,2] <- rep(3,5)
+  m[,3] <- seq(-0.75,0.75,length=5)
+  
+  res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin)
+  res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim)
+  
+  res.nlmin<-res.aminnlmin.mat[1:3,which.min(res.aminnlmin.mat[4,])]
+  res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
+  
+  if (!is.na(res.nlmin[1])) {
+    return (data.frame("mu"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+  } else {
+    return (data.frame("mu"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+  }
 }
 
 # marginal fit
@@ -96,16 +191,24 @@ parallelfit <- function() {
       tryCatch({
         x<-as.numeric(unlist(task))
         Xs.ref <- Xs(infile,var,node=c(x))
-        paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile)
-        result<-list(node=x,gamma1D=paramsXsPOT$shape,
-                     scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
+        
+        paramsXsGEV<-maginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
+        result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
+                     sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
+        
+#         paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile)
+#         result<-list(node=x,gamma1D=paramsXsPOT$shape,
+#                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
       if (bug) {
         print("recomputing fpot")
-        paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile,std.err = FALSE)
-        print(paste("results are:",paramsXsPOT$shape,paramsXsPOT$scale,paramsXsPOT$threshold))
-        result<-list(node=x,gamma1D=paramsXsPOT$shape,
-                     scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
+#         paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile,std.err = FALSE)
+#         print(paste("results are:",paramsXsPOT$shape,paramsXsPOT$scale,paramsXsPOT$threshold))
+#         result<-list(node=x,gamma1D=paramsXsPOT$shape,
+#                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
+        paramsXsGEV<-maginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
+        result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
+                     sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
         mpi.send.Robj(result,0,4) 
       } else {
         mpi.send.Robj(result,0,2)
@@ -140,9 +243,12 @@ parallelStandardization <- function() {
         ncfile<-nc_open(filename = fitinfos,readunlim = FALSE)
         u_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"u_s",sep='_'), start = x, count = 1))
         sigma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"sigma_s",sep='_'), start = x, count = 1))
-        gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'), start = x, count = 1))
+#         gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'), start = x, count = 1))
+        xi_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"xi_s",sep='_'), start = x, count = 1))
+        mu_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"mu_s",sep='_'), start = x, count = 1))
         
-        scaled<-x.standardScale(Xs.ref$var, u_s = u_s, gamma_s = gamma_s, sigma_s = sigma_s)
+        scaled<-x.standardScale(Xs.ref$var, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
+#         scaled<-x.standardScale(Xs.ref$var, u_s = u_s, gamma_s = gamma_s, sigma_s = sigma_s)
         result<-list(node = x, scaledvar = scaled, u_s = u_s)
         
         nc_close(ncfile)
@@ -188,7 +294,9 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
       if (v$name %in% var) {units.var <- v$units ;break}
     }
     
-    gamma1D <- rep(-9999,length(node))
+#     gamma1D <- rep(-9999,length(node))
+    mu1D <- rep(-9999,length(node))
+    xi1D <- rep(-9999,length(node))
     scale1D <- rep(-9999,length(node))
     thres1D <- rep(-9999,length(node))
     
@@ -196,6 +304,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     mpi.bcast.Robj2slave(parallelfit)
     mpi.bcast.Robj2slave(Xs)
     mpi.bcast.Robj2slave(marginGPDfit)
+    mpi.bcast.Robj2slave(maginGEVExceedanceFit)
     mpi.bcast.Robj2slave(infile)
     mpi.bcast.Robj2slave(var)
     mpi.bcast.Robj2slave(quantile)
@@ -231,10 +340,13 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
       } else if (tag == 2 || tag == 4) {
         #message contains results. Deal with it.
         res<-message
-        gamma1D[res$node]<-res$gamma1D
+#         gamma1D[res$node]<-res$gamma1D
+        mu1D[res$node] <- res$mu1D
+        xi1D[res$node] <- res$xi1D
         scale1D[res$node] <- res$scale1D
         thres1D[res$node] <- res$thres1D
-        print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D,"; thres",res$thres1D))
+#         print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D,"; thres",res$thres1D))
+        print(paste("Margin FPOT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$scale1D,"; xi",res$xi1D,"; thres",res$thres1D))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
@@ -244,16 +356,20 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
     
+#     varGamma <- ncvar_def(paste(var,"gamma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varThres <- ncvar_def(paste(var,"u_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
-    varGamma <- ncvar_def(paste(var,"gamma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
+    varMu <- ncvar_def(paste(var,"mu_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
+    varXi <- ncvar_def(paste(var,"xi_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varScale <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     
     tmp.nc.path <- "../../../work/tmp.nc"
     if (file.exists(tmp.nc.path)) {file.remove(tmp.nc.path)}
     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
     
+#     ncvar_put(tmp.nc,varGamma,gamma1D,start=1,count=-1)
     ncvar_put(tmp.nc,varThres,thres1D,start=1,count=-1)
-    ncvar_put(tmp.nc,varGamma,gamma1D,start=1,count=-1)
+    ncvar_put(tmp.nc,varXi,xi1D,start=1,count=-1)
+    ncvar_put(tmp.nc,varMu,mu1D,start=1,count=-1)
     ncvar_put(tmp.nc,varScale,scale1D,start=1,count=-1)
     
     nc_close(tmp.nc)
