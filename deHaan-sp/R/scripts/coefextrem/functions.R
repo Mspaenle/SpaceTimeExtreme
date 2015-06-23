@@ -11,7 +11,7 @@ Xs <- function (file,var,node) {
 }
 
 # return a outfile where any var(t) = max_s(var(t)), s \in S
-space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year) {
+space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year,quantile=0.95) {
   prec="single"
   missval=1.e30
   
@@ -20,12 +20,9 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year) {
   # if not yet transformed, marginal transformation to frechet unit
   if (!isUnitFrechet) {
     tmpfile <- "../../../work/unitfrechet.nc"
-    unitFrechetConversion(infile,tmpfile,variables,year)
+    unitFrechetConversion(infile,tmpfile,variables,year,quantile = quantile)
   } 
   
-  ## local DEBUG ##
-#   tmpfile <- "~/Desktop/toto/unitfrechet.nc"
-  ###########
   tmpfile.nc<-nc_open(tmpfile,readunlim = FALSE)
   # Get the max over the area, at each time step of the file
   
@@ -99,13 +96,13 @@ parallelfit <- function() {
       tryCatch({
         x<-as.numeric(unlist(task))
         Xs.ref <- Xs(infile,var,node=c(x))
-        paramsXsPOT<-marginGPDfit(Xs.ref$var)
+        paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile)
         result<-list(node=x,gamma1D=paramsXsPOT$shape,
                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
       if (bug) {
         print("recomputing fpot")
-        paramsXsPOT<-marginGPDfit(Xs.ref$var,std.err = FALSE)
+        paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile,std.err = FALSE)
         print(paste("results are:",paramsXsPOT$shape,paramsXsPOT$scale,paramsXsPOT$threshold))
         result<-list(node=x,gamma1D=paramsXsPOT$shape,
                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
@@ -201,6 +198,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     mpi.bcast.Robj2slave(marginGPDfit)
     mpi.bcast.Robj2slave(infile)
     mpi.bcast.Robj2slave(var)
+    mpi.bcast.Robj2slave(quantile)
     print("data broadcasted")
     mpi.bcast.cmd(parallelfit())
     print("slaves launched")

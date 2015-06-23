@@ -8,18 +8,19 @@ isUnitFrechet=FALSE
 lagMax=200
 
 maxfile="../../../work/max_Yt_Ut.nc"
+quantile=0.99
 
 #local debug
-maxfile="~/Desktop/toto/max_Yt_Ut.nc"
-isUnitFrechet=TRUE
-isMaxFile=TRUE
+# maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+# isUnitFrechet=TRUE
+# isMaxFile=TRUE
 
 variables=c("hs","t01")
 year=2012
 
 # 1/ construct df of Y_t,u_t, t \in T
 if (!isMaxFile) {
-  space.maximazor(infile,maxfile,variables,isUnitFrechet,year)  
+  space.maximazor(infile,maxfile,variables,isUnitFrechet,year,quantile = quantile)  
 } else if (!file.exists(maxfile)) {
   stop("File containing the max values has not yet been constructed")
 }
@@ -28,8 +29,8 @@ if (!isMaxFile) {
 data <- theta.estimator(maxfile,variables[1],lagMax)
 
 # 3/ finally plot the data after converting the list to a df.
-plot(data$lag,data$theta)
+# plot(data$lag,data$theta)
 
 # 7/ MPI handling
-# mpi.close.Rslaves()
-# mpi.quit()
+mpi.close.Rslaves()
+mpi.quit()
