@@ -107,7 +107,7 @@ amin<-function(theta,x) {
 }
 
 # nlmin amin
-aminnlmin <- function (start) {
+aminnlmin <- function (start,d) {
   res <- nlminb(start = start, objective = amin, x=d,
                 hessian = F, lower=c(-Inf,1*10^(-4),-1),
                 upper=c(min(d),Inf,1), control = list(iter.max=1000))
@@ -119,7 +119,7 @@ aminnlmin <- function (start) {
 }
 
 # optim amin
-aminoptim <- function (start) {
+aminoptim <- function (start,d) {
   res <- optim(par = start, fn = amin,x=d,hessian = F,
                lower=c(-Inf,1*10^(-4),-1),
                upper=c(min(d),Inf,1),control = list(maxit=1000),method="L-BFGS-B")
@@ -131,7 +131,7 @@ aminoptim <- function (start) {
 }
 
 # maginal GEV fit over threshold exceedance 
-maginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
+marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   threshold <- as.numeric(quantile(x,quantile))
   if (cmax) {
     exceed <- as.numeric(clusters(x, u = threshold, r = r, cmax = TRUE, keep.names = FALSE))
@@ -147,8 +147,8 @@ maginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   m[,2] <- rep(3,5)
   m[,3] <- seq(-0.75,0.75,length=5)
   
-  res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin)
-  res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim)
+  res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin, d=d)
+  res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim, d=d)
   
   res.nlmin<-res.aminnlmin.mat[1:3,which.min(res.aminnlmin.mat[4,])]
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
@@ -192,7 +192,7 @@ parallelfit <- function() {
         x<-as.numeric(unlist(task))
         Xs.ref <- Xs(infile,var,node=c(x))
         
-        paramsXsGEV<-maginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
+        paramsXsGEV<-marginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
         result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
                      sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
         
@@ -206,7 +206,7 @@ parallelfit <- function() {
 #         print(paste("results are:",paramsXsPOT$shape,paramsXsPOT$scale,paramsXsPOT$threshold))
 #         result<-list(node=x,gamma1D=paramsXsPOT$shape,
 #                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
-        paramsXsGEV<-maginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
+        paramsXsGEV<-marginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
         result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
                      sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
         mpi.send.Robj(result,0,4) 
@@ -304,7 +304,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     mpi.bcast.Robj2slave(parallelfit)
     mpi.bcast.Robj2slave(Xs)
     mpi.bcast.Robj2slave(marginGPDfit)
-    mpi.bcast.Robj2slave(maginGEVExceedanceFit)
+    mpi.bcast.Robj2slave(marginGEVExceedanceFit)
     mpi.bcast.Robj2slave(amin)
     mpi.bcast.Robj2slave(aminnlmin)
     mpi.bcast.Robj2slave(aminoptim)
@@ -349,7 +349,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         scale1D[res$node] <- res$scale1D
         thres1D[res$node] <- res$thres1D
 #         print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D,"; thres",res$thres1D))
-        print(paste("Margin FPOT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$scale1D,"; xi",res$xi1D,"; thres",res$thres1D))
+        print(paste("Margin FIT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$scale1D,"; xi",res$xi1D,"; thres",res$thres1D))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
