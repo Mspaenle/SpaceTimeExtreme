@@ -92,15 +92,8 @@ amin<-function(theta,x) {
       }
     }
     if (j == length(x)) {
-      if (debug) {
-        l<-n * log(theta[2]) + coef*val
-        print(paste("nllh",l,"c:",c,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3],"j",j))
-      }
       return (n * log(theta[2]) + coef*val)
     } else {
-      if (debug){
-        print(paste("nllh:",99999999,"c:",c,"mu:",theta[1],"sigma:",theta[2],"xi:",theta[3],"j",j))
-      }
       return (9999999)
     }
   }
