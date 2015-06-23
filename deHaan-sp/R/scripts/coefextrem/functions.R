@@ -290,7 +290,8 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
 #     gamma1D <- rep(-9999,length(node))
     mu1D <- rep(-9999,length(node))
     xi1D <- rep(-9999,length(node))
-    scale1D <- rep(-9999,length(node))
+#     scale1D <- rep(-9999,length(node))
+    sigma1D <- rep(-9999,length(node))
     thres1D <- rep(-9999,length(node))
     
     ## Master part
@@ -339,10 +340,11 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
 #         gamma1D[res$node]<-res$gamma1D
         mu1D[res$node] <- res$mu1D
         xi1D[res$node] <- res$xi1D
-        scale1D[res$node] <- res$scale1D
+#         scale1D[res$node] <- res$scale1D
+        sigma1D[res$node] <- res$sigma1D
         thres1D[res$node] <- res$thres1D
 #         print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D,"; thres",res$thres1D))
-        print(paste("Margin FIT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$scale1D,"; xi",res$xi1D,"; thres",res$thres1D))
+        print(paste("Margin FIT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$sigma1D,"; xi",res$xi1D,"; thres",res$thres1D))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
@@ -356,17 +358,20 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     varThres <- ncvar_def(paste(var,"u_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varMu <- ncvar_def(paste(var,"mu_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varXi <- ncvar_def(paste(var,"xi_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
-    varScale <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
+#     varScale <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
+    varSigma <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     
     tmp.nc.path <- "../../../work/tmp.nc"
     if (file.exists(tmp.nc.path)) {file.remove(tmp.nc.path)}
-    tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
+#     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
+    tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varSigma))
     
 #     ncvar_put(tmp.nc,varGamma,gamma1D,start=1,count=-1)
     ncvar_put(tmp.nc,varThres,thres1D,start=1,count=-1)
     ncvar_put(tmp.nc,varXi,xi1D,start=1,count=-1)
     ncvar_put(tmp.nc,varMu,mu1D,start=1,count=-1)
-    ncvar_put(tmp.nc,varScale,scale1D,start=1,count=-1)
+#     ncvar_put(tmp.nc,varScale,scale1D,start=1,count=-1)
+    ncvar_put(tmp.nc,varSigma,sigma1D,start=1,count=-1)
     
     nc_close(tmp.nc)
     # append tmpfile to output file
