@@ -364,7 +364,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     tmp.nc.path <- "../../../work/tmp.nc"
     if (file.exists(tmp.nc.path)) {file.remove(tmp.nc.path)}
 #     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
-    tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varSigma))
+    tmp.nc <- nc_create(tmp.nc.path,list(varThres,varXi,varMu,varSigma))
     
 #     ncvar_put(tmp.nc,varGamma,gamma1D,start=1,count=-1)
     ncvar_put(tmp.nc,varThres,thres1D,start=1,count=-1)
