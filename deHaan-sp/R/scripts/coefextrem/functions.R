@@ -232,8 +232,8 @@ parallelStandardization <- function() {
         xi_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"xi_s",sep='_'), start = x, count = 1))
         mu_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"mu_s",sep='_'), start = x, count = 1))
         
-        scaled<-x.standardScale(Xs.ref$var, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
-        u_s_scaled<-scaled<-x.standardScale(u_s, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
+        scaled <- x.standardScale(Xs.ref$var, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
+        u_s_scaled <- x.standardScale(u_s, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
         
         result<-list(node = x, scaledvar = scaled, u_s = u_s_scaled)
         
@@ -332,7 +332,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         xi1D[res$node] <- res$xi1D
         sigma1D[res$node] <- res$sigma1D
         thres1D[res$node] <- res$thres1D
-        print(paste("Margin FIT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$sigma1D,"; xi",res$xi1D,"; thres",res$thres1D))
+        print(paste0("Margin FIT - node:",res$node,"; mu=",res$mu1D,"; scale=",res$sigma1D,"; xi=",res$xi1D,"; thres=",res$thres1D)
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
