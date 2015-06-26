@@ -33,5 +33,5 @@ data <- theta.estimator(maxfile,variables[1],lagMax)
 # plot(data$lag,data$theta)
 
 # 7/ MPI handling
-# mpi.close.Rslaves()
-# mpi.quit()
+mpi.close.Rslaves()
+mpi.quit()
