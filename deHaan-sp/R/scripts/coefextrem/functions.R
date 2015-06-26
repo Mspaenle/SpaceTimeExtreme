@@ -332,7 +332,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         xi1D[res$node] <- res$xi1D
         sigma1D[res$node] <- res$sigma1D
         thres1D[res$node] <- res$thres1D
-        print(paste0("Margin FIT - node:",res$node,"; mu=",res$mu1D,"; scale=",res$sigma1D,"; xi=",res$xi1D,"; thres=",res$thres1D)
+        print(paste0("Margin FIT - node:",res$node,"; mu=",res$mu1D,"; scale=",res$sigma1D,"; xi=",res$xi1D,"; thres=",res$thres1D))
       } else if (tag == 3) {
         #a slave has closed down.
         closed_slaves <- closed_slaves + 1
