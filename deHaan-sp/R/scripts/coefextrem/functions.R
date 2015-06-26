@@ -466,7 +466,7 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
   U.t <- ncvar_get(nc = in.nc, varid = paste("u",var,"t",sep="."), start = 1, count = -1)
   
-  return(data.frame("Y.t"=Y.t,"U.t"=U.t))
+#   return(data.frame("Y.t"=Y.t,"U.t"=U.t))
   b <- Y.t[Y.t>U.t]
   
   m.bool <- (Y.t > U.t)
@@ -478,22 +478,24 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   plot(density(b),main = "X.t = (Y.t > U.t) density")
   
   df <- NULL
-  m <- sum(m.bool==TRUE)  
-  print(m)
+  nbexceedances <- sum(m.bool==TRUE)  
+  print(paste0("nb exceedances",nbexceedances))
 
   nbclusters<-length(clusters(Y.t,u=1,keep.names = FALSE,cmax=TRUE,r=6))
-  nbexceedances<-m
   print(paste("extremal index:",nbexceedances/nbclusters))
-  
+
   for (k in 1:lagMax) {
     s<-0
+    m<-0
     for (j in 1:(length(Z.t)-k)) {
-#       b <- max( Z.t[j], Z.t[j+k] )
-#       if (b > 1) {
-#         s <- s + ( 1/max( Z.t[j], Z.t[j+k] ) )  
-        s <- s + ( min( 1/Z.t[j], 1/Z.t[j+k] ) )
-#       }
+      b <- max( Z.t[j], Z.t[j+k] )
+      if (b > 1) {
+        m <- m + 1
+      }
+        s <- s + ( 1/max( Z.t[j], Z.t[j+k] ) )  
+#       s <- s + ( min( 1/Z.t[j], 1/Z.t[j+k] ) )
     }
+    print(m)
     theta <- m / s
     df <- rbind(df,data.frame("lag"=k,"theta"=theta))
   }

@@ -12,9 +12,9 @@ maxfile="../../../work/max_Yt_Ut.nc"
 quantile=0.99
 
 #local debug
-# maxfile="~/Desktop/toto/max_Yt_Ut.nc"
-# isUnitFrechet=TRUE
-# isMaxFile=TRUE
+maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+isUnitFrechet=TRUE
+isMaxFile=TRUE
 
 variables=c("hs","t01")
 year=2012
@@ -30,8 +30,8 @@ if (!isMaxFile) {
 data <- theta.estimator(maxfile,variables[1],lagMax)
 
 # 3/ finally plot the data after converting the list to a df.
-# plot(data$lag,data$theta)
+plot(data$lag,data$theta)
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
