@@ -189,16 +189,9 @@ parallelfit <- function() {
         result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
                      sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
         
-#         paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile)
-#         result<-list(node=x,gamma1D=paramsXsPOT$shape,
-#                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
       if (bug) {
-        print("recomputing fpot")
-#         paramsXsPOT<-marginGPDfit(Xs.ref$var,quantile=quantile,std.err = FALSE)
-#         print(paste("results are:",paramsXsPOT$shape,paramsXsPOT$scale,paramsXsPOT$threshold))
-#         result<-list(node=x,gamma1D=paramsXsPOT$shape,
-#                      scale1D=paramsXsPOT$scale,thres1D=as.numeric(paramsXsPOT$threshold))
+        print("recomputing fgev")
         paramsXsGEV<-marginGEVExceedanceFit(Xs.ref$var,quantile=quantile)
         result<-list(node=x,mu1D=paramsXsGEV$mu,xi1D=paramsXsGEV$shape,
                      sigma1D=paramsXsGEV$scale,thres1D=paramsXsGEV$threshold)
@@ -236,13 +229,13 @@ parallelStandardization <- function() {
         ncfile<-nc_open(filename = fitinfos,readunlim = FALSE)
         u_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"u_s",sep='_'), start = x, count = 1))
         sigma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"sigma_s",sep='_'), start = x, count = 1))
-#         gamma_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"gamma_s",sep='_'), start = x, count = 1))
         xi_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"xi_s",sep='_'), start = x, count = 1))
         mu_s <- as.numeric(ncvar_get(nc = ncfile,varid = paste(var,"mu_s",sep='_'), start = x, count = 1))
         
         scaled<-x.standardScale(Xs.ref$var, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
-#         scaled<-x.standardScale(Xs.ref$var, u_s = u_s, gamma_s = gamma_s, sigma_s = sigma_s)
-        result<-list(node = x, scaledvar = scaled, u_s = u_s)
+        u_s_scaled<-scaled<-x.standardScale(u_s, u_s = u_s, mu_s = mu_s, sigma_s = sigma_s, xi_s = xi_s)
+        
+        result<-list(node = x, scaledvar = scaled, u_s = u_s_scaled)
         
         nc_close(ncfile)
       }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
@@ -287,10 +280,8 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
       if (v$name %in% var) {units.var <- v$units ;break}
     }
     
-#     gamma1D <- rep(-9999,length(node))
     mu1D <- rep(-9999,length(node))
     xi1D <- rep(-9999,length(node))
-#     scale1D <- rep(-9999,length(node))
     sigma1D <- rep(-9999,length(node))
     thres1D <- rep(-9999,length(node))
     
@@ -337,13 +328,10 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
       } else if (tag == 2 || tag == 4) {
         #message contains results. Deal with it.
         res<-message
-#         gamma1D[res$node]<-res$gamma1D
         mu1D[res$node] <- res$mu1D
         xi1D[res$node] <- res$xi1D
-#         scale1D[res$node] <- res$scale1D
         sigma1D[res$node] <- res$sigma1D
         thres1D[res$node] <- res$thres1D
-#         print(paste("Margin FPOT - Node:",res$node,"; gamma",res$gamma1D,"; scale",res$scale1D,"; thres",res$thres1D))
         print(paste("Margin FIT - Node:",res$node,"; mu",res$mu1D,res$node,"; scale",res$sigma1D,"; xi",res$xi1D,"; thres",res$thres1D))
       } else if (tag == 3) {
         #a slave has closed down.
@@ -354,23 +342,18 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
     
-#     varGamma <- ncvar_def(paste(var,"gamma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varThres <- ncvar_def(paste(var,"u_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varMu <- ncvar_def(paste(var,"mu_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varXi <- ncvar_def(paste(var,"xi_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
-#     varScale <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     varSigma <- ncvar_def(paste(var,"sigma_s",sep="_"),"",dimNode,missval=missval,prec="float",compression = 9)
     
     tmp.nc.path <- "../../../work/tmp.nc"
     if (file.exists(tmp.nc.path)) {file.remove(tmp.nc.path)}
-#     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varGamma,varScale))
     tmp.nc <- nc_create(tmp.nc.path,list(varThres,varXi,varMu,varSigma))
     
-#     ncvar_put(tmp.nc,varGamma,gamma1D,start=1,count=-1)
     ncvar_put(tmp.nc,varThres,thres1D,start=1,count=-1)
     ncvar_put(tmp.nc,varXi,xi1D,start=1,count=-1)
     ncvar_put(tmp.nc,varMu,mu1D,start=1,count=-1)
-#     ncvar_put(tmp.nc,varScale,scale1D,start=1,count=-1)
     ncvar_put(tmp.nc,varSigma,sigma1D,start=1,count=-1)
     
     nc_close(tmp.nc)
@@ -455,7 +438,7 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
         res<-message
         
         scaledvar1D<-res$scaledvar
-        threshold <- 1
+        threshold <- res$u_s
 
         varnc<- paste(var,"scaled",sep="_")
         thresholdvar <- paste("u",var,"scaled",sep="_")
@@ -483,29 +466,37 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
   U.t <- ncvar_get(nc = in.nc, varid = paste("u",var,"t",sep="."), start = 1, count = -1)
   
+  return(data.frame("Y.t"=Y.t,"U.t"=U.t))
+  b <- Y.t[Y.t>U.t]
+  
   m.bool <- (Y.t > U.t)
   Z.t <- pmax(Y.t,U.t)
+
+  par(mfrow = c(2,2))
+  plot(Z.t,main = "Y.t timeserie")
+  plot(density(Z.t),main = "Z.t density")
+  plot(density(b),main = "X.t = (Y.t > U.t) density")
   
   df <- NULL
   m <- sum(m.bool==TRUE)  
-  
-#   m <- sum(1/Y.t)
-#   m <- 0
+  print(m)
+
+  nbclusters<-length(clusters(Y.t,u=1,keep.names = FALSE,cmax=TRUE,r=6))
+  nbexceedances<-m
+  print(paste("extremal index:",nbexceedances/nbclusters))
   
   for (k in 1:lagMax) {
     s<-0
-    
     for (j in 1:(length(Z.t)-k)) {
-#       m <- m + 1
-      s <- s + ( 1 / max( Z.t[j], Z.t[j+k] ) )
-#       s <- s + ( min( 1/Z.t[j],1/Z.t[j+k] ) )
+#       b <- max( Z.t[j], Z.t[j+k] )
+#       if (b > 1) {
+#         s <- s + ( 1/max( Z.t[j], Z.t[j+k] ) )  
+        s <- s + ( min( 1/Z.t[j], 1/Z.t[j+k] ) )
+#       }
     }
-    
-    theta<-m / s
-    
+    theta <- m / s
     df <- rbind(df,data.frame("lag"=k,"theta"=theta))
   }
-
   nc_close(nc = in.nc)
   return(df)
 }

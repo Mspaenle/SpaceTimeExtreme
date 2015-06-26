@@ -1,6 +1,7 @@
 ### EXTREMAL COEFFICIENT BETWEEN ################
 # {Y_t , Y_{t+delta}}, where Y_t = max{Y_{i,t}} #
 #################################################
+require(evd)
 source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
@@ -32,5 +33,5 @@ data <- theta.estimator(maxfile,variables[1],lagMax)
 # plot(data$lag,data$theta)
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
