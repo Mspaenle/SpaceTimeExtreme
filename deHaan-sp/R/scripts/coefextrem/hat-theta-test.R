@@ -90,7 +90,7 @@ for (i in 1:ni) {
   s<-0
   m<-0
   for (j in 1:length(c1)) {
-    if (c1[j] > 1 || c1[j] > 1) {
+    if (c1[j] > 1) {
       m <- m + 1  
       s <- s + ( 1/max( c1[j] ) )
     }
