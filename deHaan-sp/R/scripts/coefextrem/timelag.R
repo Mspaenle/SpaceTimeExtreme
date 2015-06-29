@@ -6,10 +6,10 @@ source("functions.R")
 isMaxFile=FALSE
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isUnitFrechet=FALSE
-lagMax=200
+lagMax=50
 
 maxfile="../../../work/max_Yt_Ut.nc"
-quantile=0.99
+quantile=0.95
 
 #local debug
 maxfile="~/Desktop/toto/max_Yt_Ut.nc"
@@ -33,5 +33,5 @@ data <- theta.estimator(maxfile,variables[1],lagMax)
 plot(data$lag,data$theta)
 
 # 7/ MPI handling
-# mpi.close.Rslaves()
-# mpi.quit()
+mpi.close.Rslaves()
+mpi.quit()
