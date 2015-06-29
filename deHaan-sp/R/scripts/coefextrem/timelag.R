@@ -12,9 +12,9 @@ maxfile="../../../work/max_Yt_Ut.nc"
 quantile=0.95
 
 #local debug
-maxfile="~/Desktop/toto/max_Yt_Ut.nc"
-isUnitFrechet=TRUE
-isMaxFile=TRUE
+# maxfile="~/Desktop/toto/max_Yt_Ut.nc"
+# isUnitFrechet=TRUE
+# isMaxFile=TRUE
 
 variables=c("hs","t01")
 year=2012
