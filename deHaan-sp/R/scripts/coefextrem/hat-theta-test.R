@@ -148,14 +148,18 @@ theta.distance0 <- m / s
 
 
 ### 1 site, lag dans le temps kmax = 100 ###
-kmax<-20
+kmax<-120
+q<-quantile(df.frech[,1],0.95)
 res<-NULL
-m<-sum(1/df.frech[,1])
 for (k in 0:kmax) {
   s<-0
+  m <- 0
   bla<-length(df.frech[,1])-k
   for (j in 1:bla ) {
-      s <- s + ( 1/max( df.frech[j,1], df.frech[j+k,1] ) )  
+    if (max( df.frech[j,1], df.frech[j+k,1] ) > q ) {
+      m <- m+1
+    }
+    s <- s + ( 1/max( df.frech[j,1], df.frech[j+k,1], q ) )  
   }
   theta.time <- m / s
   res<-rbind(res,data.frame("k"=k,"theta"=theta.time))
