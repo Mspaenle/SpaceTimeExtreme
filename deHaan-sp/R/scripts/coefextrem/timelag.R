@@ -15,7 +15,7 @@ timegap=6 # meaning floor(24/timegap) obs per days
 # maxfile="~/Desktop/toto/max_Yt_Ut"
 # isMaxFile=TRUE
 
-variables=c("hs","fp") #fp will becomes tp=1/fp, peak wave period
+variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=c(2010,2011,2012)
 
 # 1/ construct nc files of Y_t,u_t, t \in T
