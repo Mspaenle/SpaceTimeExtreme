@@ -34,11 +34,9 @@ space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
   
   hs <- ncvar_def("hs.t","",dimTime,missval=missval,prec="float",compression = 9)
   tp <- ncvar_def("tp.t","",dimTime,missval=missval,prec="float",compression = 9)
-  time.var <- ncvar_def("time","",dimTime,missval=missval,prec="float",compression = 9)
   
   if (file.exists(outfile)) {file.remove(outfile)}
   out.nc <- nc_create(outfile,list(hs,tp,time.var),force_v4 = TRUE)
-  ncvar_put(nc = out.nc,varid = "time",vals = time, start=1, count=-1)
   
   for(t in 1:length(time)) {
     for (k in 1:length(variables)) {
