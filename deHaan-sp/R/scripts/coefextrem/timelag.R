@@ -19,7 +19,7 @@ timegap=1 # meaning floor(24/timegap) obs per days
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(2000,2012)
-years=seq(2010,2012)
+# years=seq(2010,2012)
 
 # 1/ construct nc files of Y_t,u_t, t \in T
 for (year in years) {
