@@ -11,17 +11,15 @@ Xs <- function (file,var,node) {
 }
 
 # return a outfile where any var(t) = max_s(var(t)), s \in S
-space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year,quantile=0.95) {
+space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
   prec="single"
   missval=1.e30
   
-  tmpfile <- infile
-  
-  # if not yet transformed, marginal transformation to frechet unit
-  if (!isUnitFrechet) {
-    tmpfile <- "../../../work/unitfrechet.nc"
-    unitFrechetConversion(infile,tmpfile,variables,year,quantile = quantile)
-  } 
+  y <- year-1960
+  start <- floor((y-1)*24*365.25)
+  end <- floor(y*24*365.25)
+  tmpfile <- "../../../work/tmp.nc"
+  system(command = paste(paste("ncks -O -d time",start,end,sep=","),infile,tmpfile))
   
   tmpfile.nc<-nc_open(tmpfile,readunlim = FALSE)
   # Get the max over the area, at each time step of the file
@@ -34,26 +32,26 @@ space.maximazor <- function (infile,outfile,variables,isUnitFrechet,year,quantil
   
   dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
   
-  hs.t <- ncvar_def("hs.t","",dimTime,missval=missval,prec="float",compression = 9)
-  u.hs.t <- ncvar_def("u.hs.t","",dimTime,missval=missval,prec="float",compression = 9)
-  t01.t <- ncvar_def("t01.t","",dimTime,missval=missval,prec="float",compression = 9)
-  u.t01.t <- ncvar_def("u.t01.t","",dimTime,missval=missval,prec="float",compression = 9)
+  hs <- ncvar_def("hs.t","",dimTime,missval=missval,prec="float",compression = 9)
+  tp <- ncvar_def("tp.t","",dimTime,missval=missval,prec="float",compression = 9)
+  time.var <- ncvar_def("time","",dimTime,missval=missval,prec="float",compression = 9)
   
   if (file.exists(outfile)) {file.remove(outfile)}
-  out.nc <- nc_create(outfile,list(hs.t,u.hs.t,t01.t,u.t01.t),force_v4 = TRUE)
-
+  out.nc <- nc_create(outfile,list(hs,tp,time.var),force_v4 = TRUE)
+  ncvar_put(nc = out.nc,varid = "time",vals = time, start=1, count=-1)
+  
   for(t in 1:length(time)) {
     for (k in 1:length(variables)) {
-      var<-variables[k]  
+      varid<-variables[k]
+      var<-variables[k]
+      if (var=="tp") varid<-"fp"
       
-      Y.t.s <- ncvar_get(nc = tmpfile.nc, varid = paste(var,"scaled",sep="_"), start = c(1,t), count = c(-1,1))
-      Y.t <- max(Y.t.s,na.rm = TRUE)
+      Y.t.s <- ncvar_get(nc = tmpfile.nc, varid = varid, start = c(1,t), count = c(-1,1))
+      if (var=="tp") Y.t.s <- 1/Y.t.s
       
-      U.t.s <- ncvar_get(nc = tmpfile.nc, varid = paste("u",var,"scaled",sep="_"), start = 1, count = -1)
-      U.t <- max(U.t.s,na.rm = TRUE)
+      Y.t <- max(Y.t.s, na.rm = TRUE)
       
       ncvar_put(nc = out.nc,varid = paste(var,"t",sep="."),vals = Y.t,start=t,count=1)
-      ncvar_put(nc = out.nc,varid = paste("u",var,"t",sep="."),vals = U.t,start=t,count=1)
     }
   }
   nc_close(tmpfile.nc)
@@ -459,38 +457,26 @@ unitFrechetConversion <- function (infile,outfile,variables,quantile=0.95,cmax=T
 }
 
 # estim extremal coefficient for time lag from 1 to lagMax
-theta.estimator <- function (maxfile,variable,lagMax) {
+theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
+  require(SpatialExtremes)
+  
   in.nc <- nc_open(filename = maxfile,readunlim = FALSE)
   var<-variable
   
   Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
-  U.t <- ncvar_get(nc = in.nc, varid = paste("u",var,"t",sep="."), start = 1, count = -1)
+  s <- seq(1,length(Y.t),by=timegap)
+  Y.t <- Y.t[s]
   
-  U <- U.t[1]
-#   return(data.frame("Y.t"=Y.t,"U.t"=U))
-  b <- Y.t[Y.t>U.t]
+  Y.t<-gev2frech(Y.t, emp = TRUE)
+  U<-quantile(Y.t,0.95)
   
-  m.bool <- (Y.t > U.t)
-  
-  U <- U.t[1]
-  Z.t <- pmax(Y.t,U)
-
-  par(mfrow = c(1,1))
-#   plot(Z.t,main = "Y.t timeserie")
-#   plot(density(Z.t),main = "Z.t density")
-#   plot(density(b),main = "X.t = (Y.t > U) density")
-
-  df <- NULL
+  m.bool <- (Y.t > U)
   nbexceedances <- sum(m.bool==TRUE)  
   print(paste("nb exceedances",nbexceedances))
-
-  nbclusters<-length(clusters(Y.t,u=1,keep.names = FALSE,cmax=TRUE,r=6))
+  nbclusters<-length(clusters(Y.t,u=U,keep.names = FALSE,cmax=TRUE,r=6))
   print(paste("extremal index:",nbexceedances/nbclusters))
   
-  require(SpatialExtremes)
-  Y.t<-gev2frech(Y.t,emp = TRUE)
-  U<-quantile(Y.t,0.95)
-
+  df <- NULL
   for (k in 0:lagMax) {
     s<-0
     m<-0
@@ -503,7 +489,7 @@ theta.estimator <- function (maxfile,variable,lagMax) {
         s <- s + ( 1/max( Y.t[j], Y.t[j+k], U ) )  
     }
     theta <- m / s
-    df <- rbind(df,data.frame("lag"=k,"theta"=theta))
+    df <- rbind(df,data.frame("year"=year,lag"=k,"theta"=theta))
   }
   nc_close(nc = in.nc)
   return(df)
