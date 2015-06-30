@@ -489,7 +489,7 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
         s <- s + ( 1/max( Y.t[j], Y.t[j+k], U ) )  
     }
     theta <- m / s
-    df <- rbind(df,data.frame("year"=year,lag"=k,"theta"=theta))
+    df <- rbind(df,data.frame("year"=year,"lag"=k,"theta"=theta))
   }
   nc_close(nc = in.nc)
   return(df)
