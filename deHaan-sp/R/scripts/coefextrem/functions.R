@@ -42,7 +42,8 @@ space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
     for (k in 1:length(variables)) {
       varid<-variables[k]
       var<-variables[k]
-      if (var=="tp") varid<-"fp"
+      
+      if (var=="tp") {varid<-"fp"}
       
       Y.t.s <- ncvar_get(nc = tmpfile.nc, varid = varid, start = c(1,t), count = c(-1,1))
       if (var=="tp") {Y.t.s <- 1/Y.t.s}

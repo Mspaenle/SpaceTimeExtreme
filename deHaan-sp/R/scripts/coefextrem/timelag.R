@@ -5,18 +5,18 @@ require(evd)
 source("functions.R")
 infile="../../../inputs/ww3/megagol2015a-gol-cleaned-coastband.nc"
 isMaxFile=FALSE
-lagMax=50
+lagMax=100
 maxfile="../../../work/max_Yt_Ut"
 extension=".nc"
 quantile=0.95
-timegap=6 # meaning floor(24/timegap) obs per days
+timegap=1 # meaning floor(24/timegap) obs per days
 
 #local debug
-# maxfile="~/Desktop/toto/max_Yt_Ut"
-# isMaxFile=TRUE
+maxfile="~/Desktop/toto/max_Yt_Ut"
+isMaxFile=TRUE
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
-years=c(2010,2011,2012)
+years=seq(2000,2011)
 
 # 1/ construct nc files of Y_t,u_t, t \in T
 for (year in years) {
