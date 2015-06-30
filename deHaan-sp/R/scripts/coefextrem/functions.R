@@ -466,36 +466,42 @@ theta.estimator <- function (maxfile,variable,lagMax) {
   Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
   U.t <- ncvar_get(nc = in.nc, varid = paste("u",var,"t",sep="."), start = 1, count = -1)
   
-#   return(data.frame("Y.t"=Y.t,"U.t"=U.t))
+  U <- U.t[1]
+#   return(data.frame("Y.t"=Y.t,"U.t"=U))
   b <- Y.t[Y.t>U.t]
   
   m.bool <- (Y.t > U.t)
-  Z.t <- pmax(Y.t,U.t)
-
-  par(mfrow = c(2,2))
-  plot(Z.t,main = "Y.t timeserie")
-  plot(density(Z.t),main = "Z.t density")
-  plot(density(b),main = "X.t = (Y.t > U.t) density")
   
+  U <- U.t[1]
+  Z.t <- pmax(Y.t,U)
+
+  par(mfrow = c(1,1))
+#   plot(Z.t,main = "Y.t timeserie")
+#   plot(density(Z.t),main = "Z.t density")
+#   plot(density(b),main = "X.t = (Y.t > U) density")
+
   df <- NULL
   nbexceedances <- sum(m.bool==TRUE)  
-  print(paste0("nb exceedances",nbexceedances))
+  print(paste("nb exceedances",nbexceedances))
 
   nbclusters<-length(clusters(Y.t,u=1,keep.names = FALSE,cmax=TRUE,r=6))
   print(paste("extremal index:",nbexceedances/nbclusters))
+  
+  require(SpatialExtremes)
+  Y.t<-gev2frech(Y.t,emp = TRUE)
+  U<-quantile(Y.t,0.95)
 
-  for (k in 1:lagMax) {
+  for (k in 0:lagMax) {
     s<-0
     m<-0
-    for (j in 1:(length(Z.t)-k)) {
-      b <- max( Z.t[j], Z.t[j+k] )
-      if (b > 1) {
+    indexMax<-(length(Y.t)-k)
+    for (j in 1:indexMax) {
+      max.couple <- max( Y.t[j], Y.t[j+k] )
+      if (max.couple > U) {
         m <- m + 1
       }
-        s <- s + ( 1/max( Z.t[j], Z.t[j+k] ) )  
-#       s <- s + ( min( 1/Z.t[j], 1/Z.t[j+k] ) )
+        s <- s + ( 1/max( Y.t[j], Y.t[j+k], U ) )  
     }
-    print(m)
     theta <- m / s
     df <- rbind(df,data.frame("lag"=k,"theta"=theta))
   }
