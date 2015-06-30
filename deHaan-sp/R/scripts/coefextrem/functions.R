@@ -462,8 +462,6 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
   var<-variable
   
   Y.t <- ncvar_get(nc = in.nc, varid = paste(var,"t",sep="."), start = 1, count = -1)
-  s <- seq(1,length(Y.t),by=timegap)
-  Y.t <- Y.t[s]
   
   Y.t<-gev2frech(Y.t, emp = TRUE)
   U<-quantile(Y.t,0.95)
@@ -473,14 +471,15 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
   print(paste("nb exceedances",nbexceedances))
   nbclusters<-length(clusters(Y.t,u=U,keep.names = FALSE,cmax=TRUE,r=1))
   print(paste("extremal index:",nbexceedances/nbclusters,"meaning a mean lag of",
-              nbexceedances*timegap/nbclusters,"hours"))
+              nbexceedances/nbclusters,"hours"))
   
   df <- NULL
   for (k in 0:lagMax) {
     s<-0
     m<-0
     indexMax<-(length(Y.t)-k)
-    for (j in 1:indexMax) { ### modification ici j 1x 4##
+    jseq<-seq(1,indexMax,by = timegap)
+    for (j in jseq) {
       max.couple <- max( Y.t[j], Y.t[j+k] )
       if (max.couple > U) {
         m <- m + 1
@@ -511,7 +510,6 @@ plotThetaTimeLag <- function (df.res,lagMax) {
     xlab("Time lag") +
     scale_color_discrete(name="Year") +
     geom_point(alpha=0.15,shape=3) +
-#     stat_summary(fun.y=median, geom = "line",aes(group=1),colour="black",alpha=1,size=1.5) +
     stat_summary(fun.data="mean_cl_boot",geom="smooth",aes(group=1),
                  alpha=0.25,size=1,colour="black")
 
