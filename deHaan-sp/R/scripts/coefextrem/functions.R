@@ -471,7 +471,7 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
   m.bool <- (Y.t > U)
   nbexceedances <- sum(m.bool==TRUE)  
   print(paste("nb exceedances",nbexceedances))
-  nbclusters<-length(clusters(Y.t,u=U,keep.names = FALSE,cmax=TRUE,r=6))
+  nbclusters<-length(clusters(Y.t,u=U,keep.names = FALSE,cmax=TRUE,r=1))
   print(paste("extremal index:",nbexceedances/nbclusters,"meaning a mean lag of",
               nbexceedances*timegap/nbclusters,"hours"))
   
@@ -480,7 +480,7 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
     s<-0
     m<-0
     indexMax<-(length(Y.t)-k)
-    for (j in 1:indexMax) {
+    for (j in 1:indexMax) { ### modification ici j 1x 4##
       max.couple <- max( Y.t[j], Y.t[j+k] )
       if (max.couple > U) {
         m <- m + 1
@@ -495,13 +495,25 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
 }
 
 # Function to plot theta timelag
-plotThetaTimeLag <- function (df) {
+plotThetaTimeLag <- function (df.res,lagMax) {
   require(ggplot2)
   require(reshape2)
-  
-  p <- ggplot(data = df.res, aes(x=lag,y=theta)) +
-    geom_point()
-  
+  require(Hmisc)
+
+  p <- ggplot(data = df.res, mapping = aes(x=lag,y=theta)) +
+    theme(panel.background = element_rect(fill="white")) +
+    theme(text = element_text(size=20)) +
+    theme_bw() +
+    theme(legend.position = c(0.85, 0.4)) + # c(0,0) bottom left, c(1,1) top-right.
+    theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
+    ggtitle("Extremal Coefficient timelag") +
+    ylab(expression("Extremal Coefficient":hat(theta))) + 
+    xlab("Time lag") +
+    scale_color_discrete(name="Year") +
+    geom_point(alpha=0.15,shape=3) +
+#     stat_summary(fun.y=median, geom = "line",aes(group=1),colour="black",alpha=1,size=1.5) +
+    stat_summary(fun.data="mean_cl_boot",geom="smooth",aes(group=1),
+                 alpha=0.25,size=1,colour="black")
+
   print(p)
-  
 }
