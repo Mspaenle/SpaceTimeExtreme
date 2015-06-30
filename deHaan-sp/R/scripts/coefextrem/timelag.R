@@ -32,7 +32,7 @@ for (year in years) {
 df.res<-NULL
 for (year in years) {
   outfile<-paste0(maxfile,year,extension)
-  data <- theta.estimator(maxfile,"hs",lagMax,timegap,year)
+  data <- theta.estimator(outfile,"hs",lagMax,timegap,year)
   df.res<-rbind(df.res,data)
 }
 

@@ -32,13 +32,11 @@ space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
   
   dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
   
-  hs <- ncvar_def("hs.t","",dimTime,missval=missval,prec="float",compression = 9)
-  tp <- ncvar_def("tp.t","",dimTime,missval=missval,prec="float",compression = 9)
-#   time.var <- ncvar_def("time","",dimTime,missval=missval,prec="float",compression = 9)
+  hs.t <- ncvar_def("hs.t","",dimTime,missval=missval,prec="float",compression = 9)
+  tp.t <- ncvar_def("tp.t","",dimTime,missval=missval,prec="float",compression = 9)
   
   if (file.exists(outfile)) {file.remove(outfile)}
-  out.nc <- nc_create(outfile,list(hs,tp),force_v4 = TRUE)
-#   ncvar_put(nc = out.nc,varid = "time",vals = time, start=1, count=-1)
+  out.nc <- nc_create(outfile,list(hs.t,tp.t),force_v4 = TRUE)
   
   for(t in 1:length(time)) {
     for (k in 1:length(variables)) {
@@ -47,11 +45,11 @@ space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
       if (var=="tp") varid<-"fp"
       
       Y.t.s <- ncvar_get(nc = tmpfile.nc, varid = varid, start = c(1,t), count = c(-1,1))
-      if (var=="tp") Y.t.s <- 1/Y.t.s
+      if (var=="tp") {Y.t.s <- 1/Y.t.s}
       
       Y.t <- max(Y.t.s, na.rm = TRUE)
       
-      ncvar_put(nc = out.nc,varid = paste(var,"t",sep="."),vals = Y.t,start=t,count=1)
+      ncvar_put(nc = out.nc, varid = paste(var,"t",sep="."), vals = Y.t, start=t, count=1)
     }
   }
   nc_close(tmpfile.nc)
