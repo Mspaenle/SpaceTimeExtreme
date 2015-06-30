@@ -13,8 +13,8 @@ timegap=1 # meaning floor(24/timegap) obs per days
 
 
 # LOCAL RUN #
-maxfile="~/Desktop/toto/max_Yt_Ut"
-isMaxFile=TRUE
+# maxfile="~/Desktop/toto/max_Yt_Ut"
+# isMaxFile=TRUE
 # EN LOCAL RUN #
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
@@ -40,8 +40,8 @@ for (year in years) {
 }
 
 # 3/ finally plot the data after converting the list to a df.
-plotThetaTimeLag(df.res)
+# plotThetaTimeLag(df.res)
 
 # 7/ MPI handling
-# mpi.close.Rslaves()
-# mpi.quit()
+mpi.close.Rslaves()
+mpi.quit()
