@@ -46,9 +46,8 @@ space.maximazor <- function (infile,outfile,variables,year,quantile=0.95) {
       if (var=="tp") {varid<-"fp"}
       
       Y.t.s <- ncvar_get(nc = tmpfile.nc, varid = varid, start = c(1,t), count = c(-1,1))
-      if (var=="tp") {Y.t.s <- 1/Y.t.s}
-      
-      Y.t <- max(Y.t.s, na.rm = TRUE)
+      if (var=="tp") {Y.t.s <- 1/min(Y.t.s, na.rm = TRUE)} 
+      else { Y.t <- max(Y.t.s, na.rm = TRUE) }
       
       ncvar_put(nc = out.nc, varid = paste(var,"t",sep="."), vals = Y.t, start=t, count=1)
     }
@@ -473,7 +472,8 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
   nbexceedances <- sum(m.bool==TRUE)  
   print(paste("nb exceedances",nbexceedances))
   nbclusters<-length(clusters(Y.t,u=U,keep.names = FALSE,cmax=TRUE,r=6))
-  print(paste("extremal index:",nbexceedances/nbclusters))
+  print(paste("extremal index:",nbexceedances/nbclusters,"meaning a mean lag of",
+              nbexceedances*timegap/nbclusters,"hours"))
   
   df <- NULL
   for (k in 0:lagMax) {
@@ -492,4 +492,16 @@ theta.estimator <- function (maxfile,variable,lagMax,timegap,year) {
   }
   nc_close(nc = in.nc)
   return(df)
+}
+
+# Function to plot theta timelag
+plotThetaTimeLag <- function (df) {
+  require(ggplot2)
+  require(reshape2)
+  
+  p <- ggplot(data = df.res, aes(x=lag,y=theta)) +
+    geom_point()
+  
+  print(p)
+  
 }

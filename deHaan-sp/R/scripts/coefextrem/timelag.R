@@ -11,12 +11,15 @@ extension=".nc"
 quantile=0.95
 timegap=1 # meaning floor(24/timegap) obs per days
 
-#local debug
-# maxfile="~/Desktop/toto/max_Yt_Ut"
-# isMaxFile=TRUE
+
+# LOCAL RUN #
+maxfile="~/Desktop/toto/max_Yt_Ut"
+isMaxFile=TRUE
+# EN LOCAL RUN #
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
-years=seq(2000,2011)
+years=seq(2000,2012)
+years=seq(2010,2012)
 
 # 1/ construct nc files of Y_t,u_t, t \in T
 for (year in years) {
@@ -37,8 +40,8 @@ for (year in years) {
 }
 
 # 3/ finally plot the data after converting the list to a df.
-# plot(df.res$lag,df.res$theta)
+plotThetaTimeLag(df.res)
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
