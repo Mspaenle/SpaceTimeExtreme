@@ -12,8 +12,8 @@ quantile=0.95
 timegap=1 # meaning floor(24/timegap) obs per days
 
 #local debug
-maxfile="~/Desktop/toto/max_Yt_Ut"
-isMaxFile=TRUE
+# maxfile="~/Desktop/toto/max_Yt_Ut"
+# isMaxFile=TRUE
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(2000,2011)
