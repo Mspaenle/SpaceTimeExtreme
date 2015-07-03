@@ -9,15 +9,15 @@ lagMax=100
 maxfile="../../../work/max_Yt_Ut"
 extension=".nc"
 quantile=0.95
-timegap=12 # meaning floor(24/timegap) obs per days
+timegap=18 # meaning floor(24/timegap) obs per days
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(1961,2012)
 
 # LOCAL RUN #
-# maxfile="~/Desktop/toto/max_Yt_Ut"
-# isMaxFile=TRUE
-# years=seq(2000,2012)
+maxfile="~/Desktop/toto/max_Yt_Ut"
+isMaxFile=TRUE
+years=seq(1961,2012)
 # EN LOCAL RUN #
 
 # 1/ construct nc files of Y_t,u_t, t \in T
@@ -42,5 +42,5 @@ for (year in years) {
 plotThetaTimeLag(df.res,lagMax)
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
