@@ -509,6 +509,7 @@ plotThetaTimeLag <- function (df.res,lagMax) {
     ylab(expression("Extremal Coefficient":hat(theta))) + 
     xlab("Time lag") +
     scale_color_discrete(name="Year") +
+    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
     geom_point(alpha=0.15,shape=3) +
     stat_summary(fun.data="mean_cl_boot",geom="smooth",aes(group=1),
                  alpha=0.25,size=1,colour="black")

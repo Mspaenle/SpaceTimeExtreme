@@ -1,80 +1,152 @@
 ### EXTREMAL COEFFICIENT BETWEEN ################
 # {Y_s , Y_{s+h}}                               #
 #################################################
-unitFrechetFile <- "../../../work/unitfrechet.nc"
-unitFrechetFile <- "~/Desktop/toto/unitfrechet.nc"
+require(SpatialExtremes)
+require(ncdf4)
+infile <- "../../../inputs/ww3/megagol2015a-gol.nc"
+siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat"
+sites.xyz <- "../../../inputs/sitesInfo/sites.xyz.dat"
 
-bivariateExtraction <- function (var,site1,site2,unitFrechetFile) {
-  in.nc<-nc_open(filename = unitFrechetFile, readunlim = FALSE)
+# read sites geometry Info file and return a dataframe
+getSiteGeomInfo <- function (file) {
+  data.in <- read.csv2(file = file, header = TRUE, sep="\t",stringsAsFactors = FALSE)
+  data.out <- data.in[,c(1,6,11,13)]
+  data.out$dist.h <- as.numeric(data.out$dist.h)
+  return (data.out)
+}
+
+# read sites xyz file
+getSitesXYZ <- function (file) {
+  return (read.csv2(file = file, header = FALSE))
+}
+
+# read data sequentially for a vector of node
+extractData <- function (file,sites,year,var) {
+  in.nc <- nc_open(filename = file, readunlim = FALSE) 
   
-  s1.var <- ncvar_get(nc = in.nc,varid = paste0(var,"_scaled") ,start = c(site1,1),count=c(1,-1))
-  s1.u <- ncvar_get(nc = in.nc,varid = paste0("u_",var,"_scaled") ,start = c(site1),count=c(1))
-  s2.var <- ncvar_get(nc = in.nc,varid = paste0(var,"_scaled") ,start = c(site2,1),count=c(1,-1))
-  s2.u <- ncvar_get(nc = in.nc,varid = paste0("u_",var,"_scaled") ,start = c(site2),count=c(1))
+  y <- year-1960
+  start <- floor((y-1)*24*365.25)
+  end <- floor(y*24*365.25)
   
-  df<-data.frame("s1.var"=s1.var,"s1.u"=s1.u,"s2.var"=s2.var,"s2.u"=s2.u)
-  return(df)
-  
+  res <- data.frame("obs"=seq(1,end-start))
+  nb<-0
+  for (site in sites) {
+    data.var <- ncvar_get(nc = in.nc, varid = var ,start = c(site,start),count=c(1,end-start))
+    res <- cbind(res,data.frame(site=data.var))
+    nb<-nb+1
+    print(paste0("Read ",nb,"/",length(sites)," sites"))
+  }
   nc_close(in.nc)
+  colnames(res)<-c("obs",sites)
+  return (res)
+}
+
+# convert data to frechet distrib. from empirical distrib.
+toFrech <- function (df,sites) {
+  require(SpatialExtremes)
+  df.frech<-df
+  for (site in sites) {
+    df.frech[,(names(df.frech) %in% site)] <- gev2frech(df[,(names(df) %in% site)],emp = TRUE)
+  } 
+  return (df.frech)
 }
 
 # estim extremal coefficient between two vectors
-theta.estimator.censored <- function (df) {
-  require(evd)
+theta.estimator.censored <- function (df.frech, df.siteGeomInfo, quantile, timegap) {
   
-  h<-1
-  Y.t.1 <- df[,1]
-  Y.t.2 <- df[,3]
-  U.t.1 <- df[,2]
-  U.t.2 <- df[,4]
+  df <- NULL
   
-  m.bool.1 <- (Y.t.1 > U.t.1)
-  m.bool.2 <- (Y.t.2 > U.t.2)
-  
-  Z.t.1 <- pmax(Y.t.1,U.t.1)
-  Z.t.2 <- pmax(Y.t.2,U.t.2)
-  par(mfrow=c(1,1))
-  plot(Z.t.1,Z.t.2)
-  
-  df.result <- NULL
-  nbexceedances.1 <- sum(m.bool.1==TRUE)  
-  print(paste("nb exceedances.1",nbexceedances.1))
-  U.1 <- U.t.1[1]
-  nbclusters.1<-length(clusters(Y.t.1,u=U.1,keep.names = FALSE,cmax=TRUE,r=1))
-  print(paste("extremal index.1:",nbexceedances.1/nbclusters.1))
-  nbexceedances.2 <- sum(m.bool.2==TRUE)  
-  U.2 <- U.t.2[1]
-  print(paste("nb exceedances.2",nbexceedances.2))
-  nbclusters.2<-length(clusters(Y.t.2,u=U.2,keep.names = FALSE,cmax=TRUE,r=1))
-  print(paste("extremal index.2:",nbexceedances.2/nbclusters.2))
-  
-  s<-0
-  m<-0
-  for (j in 1:length(Z.t.1) ) {
-    if ( (Z.t.1[j] > U.1) || (Z.t.2[j] > U.2) ) {
-      m <- m + 1
-      s <- s + ( 1/max( Z.t.1[j], Z.t.2[j] ) )  
+  for (i in 1:nrow(df.siteGeomInfo)) {
+    dist.h <- df.siteGeomInfo$dist.h[i]
+    orientation <- df.siteGeomInfo$label[i]
+    s1 <- df.siteGeomInfo$S1[i]
+    s2 <- df.siteGeomInfo$S2[i]
+    
+    Y.s1 <- df.frech[ , (names(df.frech) %in% s1) ]
+    U.s1 <- as.numeric(quantile(Y.s1,quantile))
+    
+    Y.s2 <- df.frech[,(names(df.frech) %in% s2)]
+    U.s2 <- as.numeric(quantile(Y.s2,quantile))
+    
+    if (is.na(Y.s1[1]) || is.na(Y.s2[1]))  {
+      next; # chunt comput. when one of two is NA
+    } else {
+      s<-0
+      m<-0
+      indexMax<-(length(Y.s1))
+      jseq<-seq(1,indexMax,by = timegap)
+      
+      U <- max(U.s1,U.s2)
+      for (j in jseq) {
+        max.couple <- max( Y.s1[j], Y.s2[j] )
+        if (max.couple > U) {
+          m <- m + 1
+        }
+        s <- s + ( 1/max( Y.s1[j], Y.s2[j], U.s1, U.s2 ) )  
+      }
+      theta <- m / s
+      df <- rbind(df,data.frame("distance"=dist.h,"orientation"=orientation,"theta"=theta))
     }
+    print(paste0(i,"/",nrow(df.siteGeomInfo)))
   }
-  
-  theta <- m / s
-  df.result <- rbind(df.result,data.frame("distance"=1,"theta"=theta))  
-  
-  return(df.result)
+  return (df)
 }
 
-# df <- bivariateExtraction("hs",1220,500,unitFrechetFile)
-df <- bivariateExtraction("hs",1700,100,unitFrechetFile)
+# Collect data
+year <- 2012
+isCollected <- TRUE
+if (!isCollected) {
+  data.siteGeomInfo <- getSiteGeomInfo(file = siteInfoFile)
+  sites <- getSitesXYZ(file = sites.xyz)$V1
+  data.var <- extractData(file = infile, sites = sites, year = year, var = "hs")
+  drop<-c("obs")
+  data.var <- data.var[,!(names(data.var) %in% drop )]
+}
 
-s<-seq(1,length((df$s1.var)),by = 8)
-df.8<-df[s,]
+isTransformed <- TRUE
+if (!isTransformed) {
+  data.var.frech <- toFrech(data.var,sites)  
+}
 
-### CHIPLOT ####
-par(mfrow=c(2,1))
-chiplot(data = df.8[,1-3])
+isThetaEstimated <- TRUE
+if (!isThetaEstimated) {
+  quantile<-0.95
+  timegap<-1
+  res <- theta.estimator.censored(data.var.frech,data.siteGeomInfo,quantile,timegap)
+  levels(res$orientation)<-c("N-S","NE-SW","NW-SE","W-E")
+}
 
-### THETA smith's censored  ####
-res<-theta.estimator.censored(df.8)
-print(paste("theta censored: ", res$theta))
+# Function to plot theta distancelag
+plotThetaDistanceLag <- function (df.res) {
+  require(ggplot2)
+  require(reshape2)
+  require(Hmisc)
+  
+  p <- ggplot(data = df.res, mapping = aes(x=distance/1000,y=theta)) +
+    theme(panel.background = element_rect(fill="white")) +
+    theme(text = element_text(size=20)) +
+    theme_bw() +
+    theme(legend.position = c(0.85, 0.4)) + # c(0,0) bottom left, c(1,1) top-right.
+    theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
+    ggtitle(paste0("Extremal Coefficient timelag ",2012)) +
+    ylab(expression("Extremal Coefficient":hat(theta)(h))) + 
+    xlab("Distance h (km)") +
+    geom_point(alpha=0.4,shape=4) +
+    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
+    facet_wrap(~ orientation,ncol=2) 
+#     geom_smooth(aes(group=orientation),
+#                 method="lm",formula = y ~ ns(x,3),
+#                 se = FALSE,size=1.5,color="black") 
+#     geom_smooth(aes(group=1, colour = "black"),
+#                 method="lm",formula = y ~ ns(x,4),
+#                 se = FALSE,size=1.7)
+#     geom_smooth(aes(group=1),color = "black",
+#                 method="loess",size=1.5)
+#     stat_summary(fun.data="",geom="smooth",
+#                  aes(group=orientation,color=orientation),alpha=0.25,size=1)
+    
+  print(p)
+}
 
-### THETA smith non censored  ####
+
+plotThetaDistanceLag(res[1<res$theta & res$theta < 2.04 ,])
