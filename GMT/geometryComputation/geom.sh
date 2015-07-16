@@ -87,16 +87,21 @@ awk -v pi=3.14159265359 -v outfile=${outfile} -v nbsitestot=${nbsitestot} '
             atanalpha = atan2(sina/cosa,1);
             aDeg = -(atanalpha * 180/pi - 90);
             
-            if (22.5 < aDeg && aDeg <= 67.5) {lab="NE";}
-            else if (67.5 < aDeg && aDeg <= 112.5) {lab="E";}
-            else if (112.5 < aDeg && aDeg <= 157.5) {lab="SE";}
-            else {lab="N";}
 
+			if (45 < aDeg && aDeg <= 135) {lab="WE";}
+			else {lab = "NS";}
 
 			printf("%d\t%f\t%f\t%f\t%f\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n",s1,s1x,s1y,s1lon,s1lat,s2,s2x,s2y,s2lon,s2lat,dij,aDeg,lab) > outfile
 		}
 	}
 ' ${work}/sites-all.xyz ${work}/sites-all-bis.xyz
+# /*if (22.5 < aDeg && aDeg <= 67.5) {lab="NE";}
+#             else if (67.5 < aDeg && aDeg <= 112.5) {lab="E";}
+#             else if (112.5 < aDeg && aDeg <= 157.5) {lab="SE";}
+#             else {lab="N";}*/
+	
+# if ( 0 < aDeg && aDeg <= 90) {lab = "NE";}
+# else {lab = "SE";}
 
 
 ## PLOT ##

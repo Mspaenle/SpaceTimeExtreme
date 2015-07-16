@@ -78,13 +78,15 @@ log $? "pscoast"
 gmt	psbasemap ${projection} ${envelope} ${echelle} ${rose} -Bf0.1a0.2:longitude:/f0.05a0.1:latitude:/:."Node names":WeSn -P -K -O >> ${outfile}.ps
 log $? "psbasemap"
 
-for i in $(seq 1 3); do
-	hyperslabs="input/hyperslabs-"${i}".dat"
-	gmt	psxy ${hyperslabs} ${projection} ${envelope}  -W2,green -L -P -K -O >> ${outfile}.ps
-	log $? "psxy ${hyperslabs}"
-done
+# for i in $(seq 1 3); do
+# 	hyperslabs="input/hyperslabs-"${i}".dat"
+# 	gmt	psxy ${hyperslabs} ${projection} ${envelope}  -W2,black -L -P -K -O >> ${outfile}.ps
+# 	log $? "psxy ${hyperslabs}"
+# done
 
-gmt psxy ${envelope} ${projection} $work/nodes.xy -S+0.1 -P -O >> ${outfile}.ps
+gmt psxy ${envelope} ${projection} input/sites.xyz -W1,blue -S+0.2 -P -K -O >> ${outfile}.ps
+
+gmt psxy ${envelope} ${projection} $work/nodes.xy -S+0.05 -P -O >> ${outfile}.ps
 log $? "psxy nodes location"
 
 # gmt pstext ${envelope} ${projection} $work/label.xy  -F+a39+f6p,Helvetica,black -P -O >> ${outfile}.ps
