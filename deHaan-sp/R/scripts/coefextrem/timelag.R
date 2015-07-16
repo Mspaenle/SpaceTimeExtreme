@@ -9,7 +9,7 @@ lagMax=100
 maxfile="../../../work/max_Yt_Ut"
 extension=".nc"
 quantile=0.95
-timegap=18 # meaning floor(24/timegap) obs per days
+timegap=12 # meaning floor(24/timegap) obs per days
 
 variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(1961,2012)

@@ -501,13 +501,13 @@ plotThetaTimeLag <- function (df.res,lagMax) {
 
   p <- ggplot(data = df.res, mapping = aes(x=lag,y=theta)) +
     theme(panel.background = element_rect(fill="white")) +
-    theme(text = element_text(size=20)) +
     theme_bw() +
+    theme(text = element_text(size=20)) +
     theme(legend.position = c(0.85, 0.4)) + # c(0,0) bottom left, c(1,1) top-right.
     theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
-    ggtitle("Extremal Coefficient timelag") +
-    ylab(expression("Extremal Coefficient":hat(theta))) + 
-    xlab("Time lag") +
+    ggtitle("Extremal Coefficient timela") +
+    ylab(expression("Extremal Coefficient":hat(theta)(k))) + 
+    xlab("Time lag k (hours)") +
     scale_color_discrete(name="Year") +
     scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
     geom_point(alpha=0.15,shape=3) +
