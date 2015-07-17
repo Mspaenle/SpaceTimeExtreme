@@ -32,7 +32,6 @@ ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 # dens.gev(data,paramsXsGEV.X)
 # qq.gev(data,paramsXsGEV.X)
 
-stop()
 #------------------------------------------------------------------------------#
 # 3/ Decluster data to obtain X^1(s) storms
 source("decluster.R")
@@ -45,22 +44,15 @@ if (!env.restart.marginsfit) {
   normalizeMargins(env.file, env.var, env.tmpfitinfo.file, normalizedfile = env.tmpnormalized.file)
 } 
 
-
-# 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
-stop()
-
-
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")
 if (!hasDeclusteredStorm) {
   if (!has.hyperslab.reference) {
-    Xs.1 <- decluster(env.var, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
                       delta = env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   } else {
-    Xs.1 <- decluster(env.var, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
                       delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.hyperslab, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   }
@@ -71,6 +63,12 @@ if (!hasDeclusteredStorm) {
     Xs.1 <- c(Xs.1,p[i])
   }
 }
+
+
+# 7/ MPI handling
+mpi.close.Rslaves()
+mpi.quit()
+stop()
 
 #------------------------------------------------------------------------------#
 source("deHaanLifter.R")
