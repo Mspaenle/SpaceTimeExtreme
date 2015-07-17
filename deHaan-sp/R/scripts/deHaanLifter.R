@@ -1,38 +1,40 @@
 require(ncdf4)
 
 # Return a list of files with uplifted storms
-lift <- function (Xs.1,var,t0.i,tmpfitinfo.file,grid=TRUE) {
+lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid=TRUE) {
   nc <- nc_open(unlist(Xs.1[1]),readunlim = FALSE)
   times <- nc$dim$time$len
   nc_close(nc)
   
-  nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
-  u.s <- rep(ncvar_get(nc = nc.parameters,"u_s"),times)
-  estim.gamma.s <- rep(ncvar_get(nc = nc.parameters,"gamma_s"),times)
-  estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma_s"),times)
-  inverse.estim.gamma.s <- rep(1/estim.gamma.s)
+  nc.parameters <- nc_open(tmpfitinfo.file.x,readunlim = FALSE)
+  x.estim.mu.s <- rep(ncvar_get(nc = nc.parameters,"mu_s"),times)
+  x.estim.xi.s <- rep(ncvar_get(nc = nc.parameters,"xi_s"),times)
+  x.estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma_s"),times)
+  x.inverse.estim.xi.s <- rep(1/x.estim.xi.s)
   nc_close(nc.parameters)
   
-  varnorm<-paste(var,"_normalized",sep="")
+  nc.parameters <- nc_open(tmpfitinfo.file.y,readunlim = FALSE)
+  y.estim.mu.s <- rep(ncvar_get(nc = nc.parameters,"mu_s"),times)
+  y.estim.xi.s <- rep(ncvar_get(nc = nc.parameters,"xi_s"),times)
+  y.estim.sigma.s <- rep(ncvar_get(nc = nc.parameters,"sigma_s"),times)
+  y.inverse.estim.xi.s <- rep(1/y.estim.xi.s)
+  nc_close(nc.parameters)
+  
   for (i in 1:length(Xs.1)) {
    Xs.1.nc <- nc_open(unlist(Xs.1[i]),readunlim = FALSE)
-   transformed.Xs.1 <- as.vector(ncvar_get(nc = Xs.1.nc,varnorm))
+   X <- as.vector(ncvar_get(nc = Xs.1.nc,var.x))
+   Y <- as.vector(ncvar_get(nc = Xs.1.nc,var.y))
    nc_close(Xs.1.nc)
    
-   Xs.2.i <- t0.i[i] * (( 1 + estim.gamma.s * (transformed.Xs.1) )^(inverse.estim.gamma.s))
+   Xs.2.i.x <- t0.i[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
+   Xs.2.i.y <- t0.i[i] * (( 1 + x.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
    # OPTIONS TRANSFORMATION EMPIRIQUE: 
    # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
-   Xs.3.i <- estim.sigma.s * ( ((Xs.2.i)^estim.gamma.s) - 1 ) * inverse.estim.gamma.s + u.s
+   Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
+   Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
    
-   # PRINT DEBUG #
-   print(paste("estim.gamma.s a ",length(estim.gamma.s)))
-   print(paste("inverse.estim.gamma.s a ",length(inverse.estim.gamma.s)))
-   print(paste("transformed.Xs.1 a ",length(transformed.Xs.1),"elements"))
-   print(paste("Xs.2.i a ",length(Xs.2.i),"elements"))
-   print(paste("Xs.3.i a ",length(Xs.3.i),"elements"))
-   # PRINT DEBUG #
-   
-   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.2 = Xs.2.i, Xs.3 = Xs.3.i, var, grid)
+   ## REPRENDRE A PARTIR D ICI ##
+   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.2. = Xs.2.i, Xs.3 = Xs.3.i, var, grid)
   }
   
   return(Xs.1)

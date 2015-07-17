@@ -39,9 +39,12 @@ if (!env.restart.marginsfit) {
   print("Construct Margins GEV-over-threshold fit and store parameters in tmpfitinfo")
   createMarginScaleParameters(env.file, env.var.x, proba = env.p, 
                               r=env.consecutivebelow, cmax=env.cmax, 
-                              tmpfitinfo.file = env.tmpfitinfo.file, grid=env.grid)
+                              tmpfitinfo.file = env.tmpfitinfo.file.x, grid=env.grid)
+  createMarginScaleParameters(env.file, env.var.y, proba = env.p, 
+                              r=env.consecutivebelow, cmax=env.cmax, 
+                              tmpfitinfo.file = env.tmpfitinfo.file.y, grid=env.grid)
   print("Normalize")
-  normalizeMargins(env.file, env.var, env.tmpfitinfo.file, normalizedfile = env.tmpnormalized.file)
+  normalizeMargins(env.file, env.var.x, env.tmpfitinfo.file.x, normalizedfile = env.tmpnormalized.file)
 } 
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
@@ -64,12 +67,6 @@ if (!hasDeclusteredStorm) {
   }
 }
 
-
-# 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
-stop()
-
 #------------------------------------------------------------------------------#
 source("deHaanLifter.R")
 # 4/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
@@ -78,9 +75,9 @@ source("deHaanLifter.R")
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
 # 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 print("Compute t0.i")
-t0.i <- computetzeroi(Xs.1,env.var,env.t0.mode,paramsXsPOT,
+t0.i <- computetzeroi(Xs.1,env.var.x,env.t0.mode,paramsXsPOT,
                       env.consecutivebelow,env.obsperyear,
-                      env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file,ref.hyperslab,env.grid)
+                      env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file.x,ref.hyperslab,env.grid)
 
 #------------------------------------------------------------------------------#
 # Find out if we need local empirical distribution function. If so, compute them
@@ -88,10 +85,17 @@ if (env.margin.transformation.mode != 4) {
   
 }
 
+
+# 7/ MPI handling
+mpi.close.Rslaves()
+mpi.quit()
+
 # 5/ Transform X^1(s) to X^2(s) using t0
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
-Xs.3 <- lift(Xs.1,env.var,t0.i,env.tmpfitinfo.file,grid=env.grid)
+Xs.3 <- lift(Xs.1,env.var.x,env.var.y,
+             t0.i,env.tmpfitinfo.file.x,env.tmpfitinfo.file.y,
+             grid=env.grid)
 
 
 # 7/ MPI handling

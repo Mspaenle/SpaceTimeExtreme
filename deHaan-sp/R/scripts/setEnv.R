@@ -26,7 +26,8 @@ env.outdir <- paste(workdir,properties["outdir"],sep="/")
 
 env.tmpnormalized.file <- paste(workdir,properties["tmpnormalized"],sep="/")
 # file.in <- env.tmpnormalized.file # normalized data
-env.tmpfitinfo.file <- paste(workdir,properties["tmpfitinfo"],sep="/")
+env.tmpfitinfo.file.x <- paste(workdir,properties["tmpfitinfo.x"],sep="/")
+env.tmpfitinfo.file.y <- paste(workdir,properties["tmpfitinfo.y"],sep="/")
 env.init.time <- as.numeric(properties["init.time"])
 
 # DEBUG MODE #
