@@ -32,12 +32,10 @@ ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 # dens.gev(data,paramsXsGEV.X)
 # qq.gev(data,paramsXsGEV.X)
 
-
+stop()
 #------------------------------------------------------------------------------#
 # 3/ Decluster data to obtain X^1(s) storms
 source("decluster.R")
-source("marginGPDFit.R")
-
 if (!env.restart.marginsfit) {
   print("Construct Margins GEV-over-threshold fit and store parameters in tmpfitinfo")
   createMarginScaleParameters(env.file, env.var.x, proba = env.p, 

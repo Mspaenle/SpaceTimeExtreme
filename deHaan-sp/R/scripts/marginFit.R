@@ -93,9 +93,9 @@ marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
   
   if (!is.na(res.nlmin[1])) {
-    return (data.frame("mu"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
   } else {
-    return (data.frame("mu"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
   }
 }
 
