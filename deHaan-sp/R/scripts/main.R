@@ -11,30 +11,47 @@ source("setEnv.R")
 # 1/ GET a time series X(s) indexed by s = node number
 source("extractTimeSerie.R")
 print("Extract Ref Location Timeserie")
-Xs.ref <- Xs(env.file, env.var, index.location=env.ref.t0, grid=env.grid)
+Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)
+Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)
 
 #------------------------------------------------------------------------------#
-# 2/ GPD fit at reference station and store marginal results
-print("Reference (t0) location GPD Fit")
-source("marginGPDFit.R")
-quantile <- as.numeric(quantile(Xs.ref$var,1-env.p))
-paramsXsPOT<-margfit(Xs.ref$var, quantile, r=env.consecutivebelow, cmax=env.cmax)
-ref.threshold <- as.numeric(paramsXsPOT$threshold)
+# 2/ GEV fit (above threshold) at reference station and store marginal results
+print("Reference (t0) location GEV Fit")
+source("marginFit.R")
+# paramsXsGEV.X <- margfit(Xs.ref.x$var, quantile, r=env.consecutivebelow, cmax=env.cmax)
+paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
+ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
+
+# # diagnostic fit
+# source("diagnosticPlots.R")
+# data.cluster<-clusters(Xs.ref.x$var,u = paramsXsGEV.X$threshold,r = 5,cmax = TRUE)
+# data<-Xs.ref.x$var[Xs.ref.x$var > paramsXsGEV.X$threshold]
+# par(mfrow=c(2,2))
+# dens.gev(data.cluster,paramsXsGEV.X)
+# qq.gev(data.cluster,paramsXsGEV.X)
+# dens.gev(data,paramsXsGEV.X)
+# qq.gev(data,paramsXsGEV.X)
+
+
 #------------------------------------------------------------------------------#
-# 4/ Decluster data to obtain X^1(s) storms
+# 3/ Decluster data to obtain X^1(s) storms
 source("decluster.R")
 source("marginGPDFit.R")
 
 if (!env.restart.marginsfit) {
-  print("Construct Margins GPD fit and store parameters in tmpfitinfo")
-  createMarginScaleParameters(env.file, env.var, proba = env.p, 
+  print("Construct Margins GEV-over-threshold fit and store parameters in tmpfitinfo")
+  createMarginScaleParameters(env.file, env.var.x, proba = env.p, 
                               r=env.consecutivebelow, cmax=env.cmax, 
                               tmpfitinfo.file = env.tmpfitinfo.file, grid=env.grid)
   print("Normalize")
   normalizeMargins(env.file, env.var, env.tmpfitinfo.file, normalizedfile = env.tmpnormalized.file)
 } 
 
-# stop("debug")
+
+# 7/ MPI handling
+mpi.close.Rslaves()
+mpi.quit()
+stop()
 
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
@@ -59,7 +76,7 @@ if (!hasDeclusteredStorm) {
 
 #------------------------------------------------------------------------------#
 source("deHaanLifter.R")
-# 3/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
+# 4/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
 # 2 = the within-cluster maxima at reference station reach the targeted ym return value
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
