@@ -20,10 +20,14 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
   y.inverse.estim.xi.s <- rep(1/y.estim.xi.s)
   nc_close(nc.parameters)
   
+  if (var.x=="tp") {varid.x<-"fp"}
+  if (var.y=="tp") {varid.y<-"fp"}
+  
   for (i in 1:length(Xs.1)) {
    Xs.1.nc <- nc_open(unlist(Xs.1[i]),readunlim = FALSE)
-   X <- as.vector(ncvar_get(nc = Xs.1.nc,var.x))
-   Y <- as.vector(ncvar_get(nc = Xs.1.nc,var.y))
+   
+   X <- as.vector(ncvar_get(nc = Xs.1.nc,varid.x))
+   Y <- as.vector(ncvar_get(nc = Xs.1.nc,varid.y))
    nc_close(Xs.1.nc)
    
    Xs.2.i.x <- t0.i[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
@@ -33,17 +37,20 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
    Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
    
-   ## REPRENDRE A PARTIR D ICI ##
-   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]), Xs.2. = Xs.2.i, Xs.3 = Xs.3.i, var, grid)
+   Xs.3.i.x[is.na(Xs.3.i.x)] <- -9999
+   Xs.3.i.y[is.na(Xs.3.i.y)] <- -9999
+   
+   addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
+                            Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
+                            Xs.2.y = Xs.2.i.y, Xs.3.y = Xs.3.i.y, varid.y, grid)
   }
   
   return(Xs.1)
 }
 
-
 # From the original storm nc.file (with Xs(1)  var)
 # add lifted (Xs.3) and re-scaled (Xs.1) time series
-addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
+addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x, Xs.2.y, Xs.3.y, varid.y, grid) {
   in.nc<-nc_open(originalStorm.nc,readunlim = FALSE)
   tmp.nc<-paste(workdirtmp,"/uplifted.nc",sep="")
   if (file.exists(tmp.nc)) file.remove(tmp.nc)
@@ -55,7 +62,8 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
   
   for (i in 1:in.nc$nvar) {
     v <- in.nc$var[[i]]
-    if (v$name %in% var) {units.var <- v$units ;break}
+    if (v$name %in% varid.x) {units.var <- v$units }
+    if (v$name %in% varid.y) {units.var <- v$units }
   }
   for (i in 1:in.nc$ndim) {
     d <- in.nc$dim[[i]]
@@ -63,37 +71,30 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
   }
   
   if (grid) {
-    lon<-ncvar_get(in.nc,"longitude")
-    lat<-ncvar_get(in.nc,"latitude")
-    time<-ncvar_get(in.nc,"time")
-    dimX <- ncdim_def("longitude", "degrees", lon)
-    dimY <- ncdim_def("latitude", "degrees", lat)
-    dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
-    varlifted <- ncvar_def(paste(var,"_uplifted",sep=""),units.var,list(dimX,dimY,dimTime),
-                           missval=missval,prec="float",compression = 9)
-    varnormalizeduplifted <- ncvar_def(paste(var,"_normalized_uplifted",sep=""),units.var,list(dimX,dimY,dimTime),
-                           missval=missval,prec="float",compression = 9)
-    tmp<-nc_create(filename = tmp.nc,vars = list(varlifted,varnormalizeduplifted),force_v4 = TRUE)
-    ncvar_put(tmp,varid = paste(var,"_uplifted",sep=""),vals = Xs.3,start=c(1,1,1),count=c(-1,-1,-1))
-    ncvar_put(tmp,varid = paste(var,"_normalized_uplifted",sep=""),vals = Xs.2,start=c(1,1,1),count=c(-1,-1,-1))
+    ## TODO : see v1.1.0 at https://github.com/rc-34/SpaceTimeExtreme/releases/tag/v1.1.0 ##
   } else {
     node<-ncvar_get(in.nc,"node")
     time<-ncvar_get(in.nc,"time")
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
-    varlifted <- ncvar_def(paste(var,"_uplifted",sep=""),units.var,list(dimNode,dimTime),
+    var.x.lifted <- ncvar_def(paste(varid.x,"_uplifted",sep=""),units.var.x,list(dimNode,dimTime),
                            missval=missval,prec="float",compression = 9)
-    varnormalizeduplifted <- ncvar_def(paste(var,"_normalized_uplifted",sep=""),units.var,list(dimNode,dimTime),
+    var.y.lifted <- ncvar_def(paste(varid.y,"_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
+                              missval=missval,prec="float",compression = 9)
+    var.x.normalized.uplifted <- ncvar_def(paste(varid.x,"_normalized_uplifted",sep=""),units.var.x,list(dimNode,dimTime),
                            missval=missval,prec="float",compression = 9)
-    tmp<-nc_create(filename = tmp.nc,vars = list(varlifted,varnormalizeduplifted),force_v4 = TRUE)
-    ncvar_put(tmp,varid = paste(var,"_uplifted",sep=""),vals = Xs.3,start=c(1,1),count=c(-1,-1))
-    ncvar_put(tmp,varid = paste(var,"_normalized_uplifted",sep=""),vals = Xs.2,start=c(1,1),count=c(-1,-1))
+    var.y.normalized.uplifted <- ncvar_def(paste(varid.y,"_normalized_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
+                                           missval=missval,prec="float",compression = 9)
+    tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted,var.x.normalized.uplifted,var.y.normalized.uplifted),force_v4 = TRUE)
+    ncvar_put(tmp,varid = paste(varid.x,"_uplifted",sep=""),vals = Xs.3.x,start=c(1,1),count=c(-1,-1))
+    ncvar_put(tmp,varid = paste(varid.y,"_uplifted",sep=""),vals = Xs.3.y,start=c(1,1),count=c(-1,-1))
+    ncvar_put(tmp,varid = paste(varid.x,"_normalized_uplifted",sep=""),vals = Xs.2.x,start=c(1,1),count=c(-1,-1))
+    ncvar_put(tmp,varid = paste(varid.y,"_normalized_uplifted",sep=""),vals = Xs.2.y,start=c(1,1),count=c(-1,-1))
   }
   nc_close(in.nc)
   nc_close(tmp)
   system(command = paste(env,"ncks -A ",tmp.nc,in.nc))
 }
-
 
 # Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
@@ -101,21 +102,24 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2, Xs.3, var, grid) {
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
 # 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 # Return values in a vector
-computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, tmpfitinfo.file, ref.hyperslab ,grid) {
+computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, tmpfitinfo.file, ref.hyperslab ,grid) {
+  require(evd)
+  
   t0.i <- NULL
-  gamma <- paramsXsPOT$shape
-  a <- paramsXsPOT$scale
-  b.t <- as.numeric(paramsXsPOT$threshold)
-  m.rlevel <- fpot(Xs.ref$var, threshold = b.t, r = consecutivebelow,
-                   npp = obsperyear, mper = m.returnperiod,
-                   cmax=cmax)$estimate['rlevel']
+  
+  xi <- paramsXsGEV$shape
+  sigma <- paramsXsGEV$scale
+  mu <- paramsXsGEV$loc
+  u <- paramsXsGEV$threshold
+  
+  m.rlevel <- evd::qgev(1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+  
   if (t0.mode == 1) {
-    # Uplift to a targeted threshold b.tt0
+    # Uplift the threshold to a targeted threshold b.tt0
     b.tt0 <- as.numeric(m.rlevel) 
-    #rlevel<- b.t+(a/gamma)*((p*obsperyear*m.returnperiod)^gamma-1) ;
-    #print(rlevel,b.tt0)
-    t0 <- (1 + gamma*(b.tt0-b.t)/a)^(1/gamma)
+    t0 <- (1 + xi*(b.tt0-mu)/sigma)^(1/xi)
     t0.i <- rep(t0,length(Xs.1))
+    
   } else if (t0.mode == 2) {
     # Find t0i to have in each storm the largest within-maxima at ref.location equal to
     # the return level corresponding to env.returnperiod
@@ -123,7 +127,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = ref.t0, grid = grid)
-      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      t0 <- ( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu )
       t0.i <- c(t0.i,t0)
     }
   } else if (t0.mode == 3) {
@@ -136,11 +140,15 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
       infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
-      a <- as.numeric(unlist(infos["a"]))
-      b.t <- as.numeric(unlist(infos["b.t"]))
-      gamma <- as.numeric(unlist(infos["gamma"]))
       
-      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      u <- as.numeric(unlist(infos["u"]))
+      mu <- as.numeric(unlist(infos["mu"]))
+      sigma <- as.numeric(unlist(infos["sigma"]))
+      xi <- as.numeric(unlist(infos["xi"]))
+      
+      m.rlevel <- evd::qgev(1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+      
+      t0 <- ( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu )
       t0.i <- c(t0.i,t0)
     }
   } else if (t0.mode == 4) {
@@ -153,11 +161,15 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsPOT, consecutivebelow, obs
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
       infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
-      a <- as.numeric(unlist(infos["a"]))
-      b.t <- as.numeric(unlist(infos["b.t"]))
-      gamma <- as.numeric(unlist(infos["gamma"]))
       
-      t0 <- ( as.numeric(m.rlevel) + (a / gamma) - b.t ) / ( as.numeric(max.i) + (a / gamma) - b.t )
+      u <- as.numeric(unlist(infos["u"]))
+      mu <- as.numeric(unlist(infos["mu"]))
+      sigma <- as.numeric(unlist(infos["sigma"]))
+      xi <- as.numeric(unlist(infos["xi"]))
+      
+      m.rlevel <- evd::qgev(1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+      
+      t0 <- ( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu )
       t0.i <- c(t0.i,t0)
     }
   }
@@ -190,17 +202,17 @@ retrieveFitInfo <- function (file, location , grid = TRUE) {
   tmp.char <- paste(workdirtmp,"/retrievefitInfos.nc",sep="")
   infos<-list()
   if (!grid) {
-    system(command = paste(env,"ncks -O -d node,",location[1]," -v u_s,sigma_s,gamma_s ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncks -O -d node,",location[1]," -v u_s,mu_s,sigma_s,xi_s ",file," ",tmp.char,sep=""))
     tmp.nc<-nc_open(tmp.char)
-    u_s<-ncvar_get(tmp.nc,"u_s")
-    gamma_s<-ncvar_get(tmp.nc,"gamma_s")
-    sigma_s<-ncvar_get(tmp.nc,"sigma_s")
+    u<-ncvar_get(tmp.nc,"u_s")
+    xi<-ncvar_get(tmp.nc,"xi_s")
+    sigma<-ncvar_get(tmp.nc,"sigma_s")
+    mu<-ncvar_get(tmp.nc,"mu_s")
     nc_close(tmp.nc)
-    infos<-list("a"=sigma_s,"b.t"=u_s,"gamma"=gamma_s)
+    infos<-list("mu"=mu,"sigma"=sigma,"xi"=xi,"u"=u)
   } else {
     stop("retrieveA has not been yet implemented for grid=TRUE option")
   }
-  
   return(infos)
 }
 
@@ -247,3 +259,4 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
 empiricaldist <- function (file, var, tmpfitinfo.file, grid=TRUE) {
   
 }
+

@@ -159,8 +159,12 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
           if (tag == 1) { #task to perform
             tryCatch({
               x<-as.numeric(unlist(task))
-              Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
-              paramsXsGEV <- marginGEVExceedanceFit(x = Xs.ref$var, quantile = 1-proba, cmax = cmax, r = r)
+              varid<-var
+              if (var=="tp") {varid<-"fp"}
+              Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
+              if (var=="tp") { Xs.ref <- 1/Xs.ref }
+              
+              paramsXsGEV <- marginGEVExceedanceFit(x = na.omit(Xs.ref$var), quantile = 1-proba, cmax = cmax, r = r)
               result<-list(node=x,shape1D=paramsXsGEV$shape,scale1D=paramsXsGEV$scale,
                            thres1D=paramsXsGEV$threshold,loc1D=paramsXsGEV$loc)
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})

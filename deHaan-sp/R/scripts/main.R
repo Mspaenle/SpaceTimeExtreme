@@ -12,7 +12,6 @@ source("setEnv.R")
 source("extractTimeSerie.R")
 print("Extract Ref Location Timeserie")
 Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)
-Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)
 
 #------------------------------------------------------------------------------#
 # 2/ GEV fit (above threshold) at reference station and store marginal results
@@ -75,7 +74,7 @@ source("deHaanLifter.R")
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
 # 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 print("Compute t0.i")
-t0.i <- computetzeroi(Xs.1,env.var.x,env.t0.mode,paramsXsPOT,
+t0.i <- computetzeroi(Xs.1,env.var.x,env.t0.mode,paramsXsGEV.X,
                       env.consecutivebelow,env.obsperyear,
                       env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file.x,ref.hyperslab,env.grid)
 
@@ -85,17 +84,12 @@ if (env.margin.transformation.mode != 4) {
   
 }
 
-
-# 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
-
 # 5/ Transform X^1(s) to X^2(s) using t0
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
-Xs.3 <- lift(Xs.1,env.var.x,env.var.y,
-             t0.i,env.tmpfitinfo.file.x,env.tmpfitinfo.file.y,
-             grid=env.grid)
+Xs.3 <- lift(Xs.1 = Xs.1, var.x = env.var.x, var.y = env.var.y, t0.i = t0.i,
+             tmpfitinfo.file.x = env.tmpfitinfo.file.x, tmpfitinfo.file.y = env.tmpfitinfo.file.y, 
+             grid = env.grid)
 
 
 # 7/ MPI handling
