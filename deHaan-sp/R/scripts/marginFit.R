@@ -164,7 +164,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
               Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
               if (var=="tp") { Xs.ref$var <- 1/Xs.ref$var }
               
-              paramsXsGEV <- marginGEVExceedanceFit(x = Xs.ref$var, quantile = 1-proba, cmax = cmax, r = r)
+              paramsXsGEV <- marginGEVExceedanceFit(x = as.numeric(na.omit(Xs.ref$var)), quantile = 1-proba, cmax = cmax, r = r)
               result<-list(node=x,shape1D=paramsXsGEV$shape,scale1D=paramsXsGEV$scale,
                            thres1D=paramsXsGEV$threshold,loc1D=paramsXsGEV$loc)
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})

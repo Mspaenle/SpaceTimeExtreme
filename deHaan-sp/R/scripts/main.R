@@ -36,12 +36,14 @@ ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 source("decluster.R")
 if (!env.restart.marginsfit) {
   print("Construct Margins GEV-over-threshold fit and store parameters in tmpfitinfo")
-  createMarginScaleParameters(env.file, env.var.x, proba = env.p, 
-                              r=env.consecutivebelow, cmax=env.cmax, 
-                              tmpfitinfo.file = env.tmpfitinfo.file.x, grid=env.grid)
+  print("WORK ON Y VARIABLE")
   createMarginScaleParameters(env.file, env.var.y, proba = env.p, 
                               r=env.consecutivebelow, cmax=env.cmax, 
                               tmpfitinfo.file = env.tmpfitinfo.file.y, grid=env.grid)
+  print("WORK ON X VARIABLE")
+  createMarginScaleParameters(env.file, env.var.x, proba = env.p, 
+                              r=env.consecutivebelow, cmax=env.cmax, 
+                              tmpfitinfo.file = env.tmpfitinfo.file.x, grid=env.grid)
   print("Normalize")
   normalizeMargins(env.file, env.var.x, env.tmpfitinfo.file.x, normalizedfile = env.tmpnormalized.file)
 } 
