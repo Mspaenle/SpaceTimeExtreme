@@ -162,7 +162,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
               varid<-var
               if (var=="tp") {varid<-"fp"}
               Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
-              if (var=="tp") { Xs.ref <- 1/Xs.ref }
+              if (var=="tp") { Xs.ref$var <- 1/Xs.ref$var }
               
               paramsXsGEV <- marginGEVExceedanceFit(x = na.omit(Xs.ref$var), quantile = 1-proba, cmax = cmax, r = r)
               result<-list(node=x,shape1D=paramsXsGEV$shape,scale1D=paramsXsGEV$scale,
@@ -246,6 +246,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       for (x in 1:length(node)) {
         print(paste("Margin GEV-over-Exceedances - Node:",x))
         
+        # TO DO BIVARIATE CASE #
         Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
         paramsXsGEV <- marginGEVExceedanceFit(x = Xs.ref$var, quantile = 1-proba, cmax = cmax, r = r)
         
