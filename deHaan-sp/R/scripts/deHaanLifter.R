@@ -33,13 +33,15 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    
    Xs.2.i.x <- t0.i[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
    Xs.2.i.y <- t0.i[i] * (( 1 + x.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
-   # OPTIONS TRANSFORMATION EMPIRIQUE: 
-   # Reperer les valeurs inferieur a 0 et faire la transformation empirique a la place de GPD
+   
+   
    Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
    Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
    
    Xs.3.i.x[is.na(Xs.3.i.x)] <- -9999
    Xs.3.i.y[is.na(Xs.3.i.y)] <- -9999
+   
+   print(Xs.3.i.y)
    
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
                             Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
