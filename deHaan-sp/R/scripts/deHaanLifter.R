@@ -56,15 +56,16 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x,
   tmp.nc<-paste(workdirtmp,"/uplifted.nc",sep="")
   if (file.exists(tmp.nc)) file.remove(tmp.nc)
   
-  units.var <- ""
+  units.var.x <- ""
+  units.var.y <- ""
   units.time <- ""
   prec="single"
   missval=1.e30
   
   for (i in 1:in.nc$nvar) {
     v <- in.nc$var[[i]]
-    if (v$name %in% varid.x) {units.var <- v$units }
-    if (v$name %in% varid.y) {units.var <- v$units }
+    if (v$name %in% varid.x) {units.var.x <- v$units }
+    if (v$name %in% varid.y) {units.var.y <- v$units }
   }
   for (i in 1:in.nc$ndim) {
     d <- in.nc$dim[[i]]
