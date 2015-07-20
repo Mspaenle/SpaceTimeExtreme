@@ -12,7 +12,7 @@ source("setEnv.R")
 source("extractTimeSerie.R")
 print("Extract Ref Location Timeserie")
 Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)
-Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)
+
 #------------------------------------------------------------------------------#
 # 2/ GEV fit (above threshold) at reference station and store marginal results
 print("Reference (t0) location GEV Fit")

@@ -93,15 +93,16 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x,
                            missval=missval,prec="float",compression = 9)
     var.y.lifted <- ncvar_def(paste(varid.y,"_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
                               missval=missval,prec="float",compression = 9)
-    var.x.normalized.uplifted <- ncvar_def(paste(varid.x,"_normalized_uplifted",sep=""),units.var.x,list(dimNode,dimTime),
-                           missval=missval,prec="float",compression = 9)
-    var.y.normalized.uplifted <- ncvar_def(paste(varid.y,"_normalized_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
-                                           missval=missval,prec="float",compression = 9)
-    tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted,var.x.normalized.uplifted,var.y.normalized.uplifted),force_v4 = TRUE)
+#     var.x.normalized.uplifted <- ncvar_def(paste(varid.x,"_normalized_uplifted",sep=""),units.var.x,list(dimNode,dimTime),
+#                            missval=missval,prec="float",compression = 9)
+#     var.y.normalized.uplifted <- ncvar_def(paste(varid.y,"_normalized_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
+#                                            missval=missval,prec="float",compression = 9)
+#     tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted,var.x.normalized.uplifted,var.y.normalized.uplifted),force_v4 = TRUE)
+    tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted),force_v4 = TRUE)
     ncvar_put(tmp,varid = paste(varid.x,"_uplifted",sep=""),vals = Xs.3.x,start=c(1,1),count=c(-1,-1))
     ncvar_put(tmp,varid = paste(varid.y,"_uplifted",sep=""),vals = Xs.3.y,start=c(1,1),count=c(-1,-1))
-    ncvar_put(tmp,varid = paste(varid.x,"_normalized_uplifted",sep=""),vals = Xs.2.x,start=c(1,1),count=c(-1,-1))
-    ncvar_put(tmp,varid = paste(varid.y,"_normalized_uplifted",sep=""),vals = Xs.2.y,start=c(1,1),count=c(-1,-1))
+#     ncvar_put(tmp,varid = paste(varid.x,"_normalized_uplifted",sep=""),vals = Xs.2.x,start=c(1,1),count=c(-1,-1))
+#     ncvar_put(tmp,varid = paste(varid.y,"_normalized_uplifted",sep=""),vals = Xs.2.y,start=c(1,1),count=c(-1,-1))
   }
   nc_close(in.nc)
   nc_close(tmp)
