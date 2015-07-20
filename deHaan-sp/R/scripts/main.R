@@ -52,11 +52,11 @@ if (!env.restart.marginsfit) {
 print("Decluster")
 if (!hasDeclusteredStorm) {
   if (!has.hyperslab.reference) {
-    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file.x, k = env.nbrstorms, threshold = ref.threshold, 
                       delta = env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   } else {
-    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file.x, k = env.nbrstorms, threshold = ref.threshold, 
                       delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.hyperslab, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   }
