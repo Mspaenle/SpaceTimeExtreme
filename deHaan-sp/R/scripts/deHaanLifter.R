@@ -38,8 +38,15 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
    Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
    
+   
+   Xs.2.i.x[is.na(Xs.2.i.x)] <- -9999
+   Xs.2.i.y[is.na(Xs.2.i.y)] <- -9999
+   Xs.2.i.x[is.infinite(Xs.2.i.x)]  <- 9999
+   Xs.2.i.y[is.infinite(Xs.2.i.y)]  <- 9999
    Xs.3.i.x[is.na(Xs.3.i.x)] <- -9999
    Xs.3.i.y[is.na(Xs.3.i.y)] <- -9999
+   Xs.3.i.x[is.infinite(Xs.3.i.x)]  <- 9999
+   Xs.3.i.y[is.infinite(Xs.3.i.y)]  <- 9999
    
    print(Xs.3.i.y)
    
