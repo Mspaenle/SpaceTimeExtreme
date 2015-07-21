@@ -49,8 +49,6 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.x[is.infinite(Xs.3.i.x)]  <- 9999
    Xs.3.i.y[is.infinite(Xs.3.i.y)]  <- 9999
    
-   write(Xs.2.i.y, file = "../../work/toto.txt")
-   
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
                             Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
                             Xs.2.y = Xs.2.i.y, Xs.3.y = Xs.3.i.y, varid.y, grid)
@@ -152,7 +150,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
-      infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
+      infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
       mu <- as.numeric(unlist(infos["mu"]))
@@ -173,7 +171,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL, hyperslabs = NULL, grid = grid)
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
-      infos <- retrieveFitInfo(file = env.tmpfitinfo.file, location = location.max.i , grid = grid)
+      infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
       mu <- as.numeric(unlist(infos["mu"]))
