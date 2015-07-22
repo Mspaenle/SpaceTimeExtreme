@@ -5,7 +5,7 @@
   xlimit[1] <- xlimit[1] - diff(xlimit) * 0.075
   xlimit[2] <- xlimit[2] + diff(xlimit) * 0.075
   xvec <- seq(xlimit[1], xlimit[2], length = 100)
-  dens <- evd::dgev(xvec, loc = paramsgev$mu, scale = paramsgev$scale,shape = paramsgev$shape)
+  dens <- evd::dgev(xvec, loc = paramsgev$loc, scale = paramsgev$scale,shape = paramsgev$shape)
   plot(spline(xvec, dens), main = main, xlab = xlab, ylab = ylab,type = "l", ...)
   if(jitter) rug(jitter(x))
   else rug(x)
@@ -16,14 +16,14 @@
 
 "qq.gev" <-  function(x, paramsgev, ci = TRUE, cilwd = 1, main = "Quantile Plot", xlab = "Model", ylab = "Empirical", ...)
 {
-  quant <- evd::qgev(ppoints(x), loc = paramsgev$mu,
+  quant <- evd::qgev(ppoints(x), loc = paramsgev$loc,
                 scale = paramsgev$scale, shape = paramsgev$shape)
   if(!ci) {
     plot(quant, sort(x), main = main, xlab = xlab, ylab = ylab, ...)
     abline(0, 1)
   }
   else {
-    samp <- evd::rgev(length(x)*99, loc = paramsgev$mu,
+    samp <- evd::rgev(length(x)*99, loc = paramsgev$loc,
                  scale = paramsgev$scale, shape = paramsgev$shape)
     samp <- matrix(samp, length(x), 99)
     samp <- apply(samp, 2, sort)

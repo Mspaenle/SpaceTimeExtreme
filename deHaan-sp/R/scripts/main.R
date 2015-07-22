@@ -21,15 +21,6 @@ source("marginFit.R")
 paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
 ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 
-# # diagnostic fit
-# source("diagnosticPlots.R")
-# data.cluster<-clusters(Xs.ref.x$var,u = paramsXsGEV.X$threshold,r = 5,cmax = TRUE)
-# data<-Xs.ref.x$var[Xs.ref.x$var > paramsXsGEV.X$threshold]
-# par(mfrow=c(2,2))
-# dens.gev(data.cluster,paramsXsGEV.X)
-# qq.gev(data.cluster,paramsXsGEV.X)
-# dens.gev(data,paramsXsGEV.X)
-# qq.gev(data,paramsXsGEV.X)
 
 #------------------------------------------------------------------------------#
 # 3/ Decluster data to obtain X^1(s) storms

@@ -71,7 +71,7 @@ aminoptim <- function (start,d) {
 
 # maginal GEV fit over threshold exceedance 
 marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
-  threshold <- as.numeric(quantile(x,quantile))
+  threshold <- as.numeric(quantile(x,quantile,na.rm = TRUE))
   if (cmax) {
     exceed <- as.numeric(clusters(x, u = threshold, r = r, cmax = TRUE, keep.names = FALSE))
   } else {
@@ -95,6 +95,63 @@ marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   if (!is.na(res.nlmin[1])) {
     return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
   } else {
+    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+  }
+}
+
+
+# nlmin2 amin
+aminnlmin2 <- function (start,d) {
+  res <- nlminb(start = start, objective = amin, x=d,
+                hessian = F, lower=c(-Inf,1*10^(-4),-Inf),
+                upper=c(min(d),Inf,Inf), control = list(iter.max=1000))
+  if (res$convergence == 0) {
+    return (c(res$par,res$objective))
+  } else {
+    return (c(NA,NA,NA,NA))
+  }
+}
+
+# optim2 amin
+aminoptim2 <- function (start,d) {
+  res <- optim(par = start, fn = amin,x=d,hessian = F,
+               lower=c(-Inf,1*10^(-4),-2),
+               upper=c(min(d),Inf,2),control = list(maxit=1000),method="L-BFGS-B")
+  if (res$convergence == 0) {
+    return (c(res$par,res$value))
+  } else {
+    return (c(NA,NA,NA,NA))
+  }
+}
+
+# maginal GEV fit over threshold exceedance 
+marginGEVExceedanceFit2 <- function (x,quantile=0.95,cmax=TRUE,r=6) {
+  threshold <- as.numeric(quantile(x,quantile,na.rm = TRUE))
+  if (cmax) {
+    exceed <- as.numeric(clusters(x, u = threshold, r = r, cmax = TRUE, keep.names = FALSE))
+  } else {
+    high <- (x > threshold) & !is.na(x)
+    exceed <- as.double(x[high])
+  }
+  
+  d <- exceed
+  
+  m <- matrix(0,6,3)
+  m[,1] <- rep(1,6)
+  m[,2] <- rep(3,6)
+  m[,3] <- seq(-1,1,length=6)
+  
+  res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin2, d=d)
+  res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim2, d=d)
+  
+  res.nlmin<-res.aminnlmin.mat[1:3,which.min(res.aminnlmin.mat[4,])]
+  res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
+  
+  if (!is.na(res.nlmin[1])) {
+    print("nlmin")
+    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+  } else {
+    print("optim")
     return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
   }
 }
@@ -160,11 +217,16 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
             tryCatch({
               x<-as.numeric(unlist(task))
               varid<-var
-              if (var=="tp") {varid<-"fp"}
-              Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
-              if (var=="tp") { Xs.ref$var <- 1/Xs.ref$var }
-              
-              paramsXsGEV <- marginGEVExceedanceFit(x = as.numeric(stats::na.omit(as.matrix(Xs.ref$var))), quantile = 1-proba, cmax = cmax, r = r)
+              paramsXsGEV <- NULL
+              if (var=="tp") {
+                varid<-"fp" 
+                Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
+                Xs.ref$var <- 1/Xs.ref$var
+                paramsXsGEV <- marginGEVExceedanceFit2(x = as.numeric(stats::na.omit(as.matrix(Xs.ref$var))), quantile = 1-proba, cmax = cmax, r = r)
+              } else {
+                Xs.ref <- Xs(file,varid,index.location=c(x),grid=grid)
+                paramsXsGEV <- marginGEVExceedanceFit(x = as.numeric(stats::na.omit(as.matrix(Xs.ref$var))), quantile = 1-proba, cmax = cmax, r = r)
+              }
               result<-list(node=x,shape1D=paramsXsGEV$shape,scale1D=paramsXsGEV$scale,
                            thres1D=paramsXsGEV$threshold,loc1D=paramsXsGEV$loc)
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
@@ -186,9 +248,12 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       mpi.bcast.Robj2slave(parallelfit)
       mpi.bcast.Robj2slave(Xs)
       mpi.bcast.Robj2slave(marginGEVExceedanceFit)
+      mpi.bcast.Robj2slave(marginGEVExceedanceFit2)
       mpi.bcast.Robj2slave(amin)
       mpi.bcast.Robj2slave(aminnlmin)
       mpi.bcast.Robj2slave(aminoptim)
+      mpi.bcast.Robj2slave(aminnlmin2)
+      mpi.bcast.Robj2slave(aminoptim2)
       mpi.bcast.Robj2slave(file)
       mpi.bcast.Robj2slave(var)
       mpi.bcast.Robj2slave(grid)
