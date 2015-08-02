@@ -67,9 +67,14 @@ source("deHaanLifter.R")
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
 # 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 print("Compute t0.i")
-t0.i <- computetzeroi(Xs.1,env.var.x,env.t0.mode,paramsXsGEV.X,
+t0.i.x <- computetzeroi(Xs.1,env.var.x,env.t0.mode,paramsXsGEV.X,
                       env.consecutivebelow,env.obsperyear,
                       env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file.x,ref.hyperslab,env.grid)
+t0.i.y <- computetzeroi(Xs.1,env.var.y,env.t0.mode,paramsXsGEV.Y,
+                        env.consecutivebelow,env.obsperyear,
+                        env.m.returnperiod,env.cmax,env.ref.t0,env.tmpfitinfo.file.y,ref.hyperslab,env.grid)
+t0.i <- data.frame(x=t0.i.x,y=t0.i.y)
+
 
 #------------------------------------------------------------------------------#
 # Find out if we need local empirical distribution function. If so, compute them
