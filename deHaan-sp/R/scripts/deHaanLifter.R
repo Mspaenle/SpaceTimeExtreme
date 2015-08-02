@@ -49,7 +49,7 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.x[is.infinite(Xs.3.i.x)]  <- 9999
    Xs.3.i.y[is.infinite(Xs.3.i.y)]  <- 9999
    
-   save(Xs.3.i.y,file = "outputs/xs3.i.y.RData")
+   save(Xs.3.i.y,file = "../../work/xs3.i.y.RData")
    
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
                             Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
