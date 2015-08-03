@@ -127,6 +127,12 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
   
   m.rlevel <- evd::qgev(1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
   
+  if (var=="tp") {
+    varid<-"fp" 
+  } else {
+    varid<-var 
+  }
+  
   if (t0.mode == 1) {
     # Uplift the threshold to a targeted threshold b.tt0
     b.tt0 <- as.numeric(m.rlevel) 
@@ -139,7 +145,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
-      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = ref.t0, grid = grid)
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = ref.t0, grid = grid)
       t0 <- ( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu )
       t0.i <- c(t0.i,t0)
     }
@@ -149,9 +155,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
-      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
-      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
+      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
@@ -170,9 +176,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
-      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = var, index.ref.location = NULL, hyperslabs = NULL, grid = grid)
+      max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL, hyperslabs = NULL, grid = grid)
       
-      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = var, max = max.i, grid = grid)
+      location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
