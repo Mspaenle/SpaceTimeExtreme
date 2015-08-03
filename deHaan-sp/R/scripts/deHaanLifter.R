@@ -126,7 +126,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
   mu <- paramsXsGEV$loc
   u <- paramsXsGEV$threshold
   
-  m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+  m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
   
   if (var=="tp") {
     varid<-"fp" 
@@ -166,9 +166,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
       sigma <- as.numeric(unlist(infos["sigma"]))
       xi <- as.numeric(unlist(infos["xi"]))
       
-      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
       
-      print(paste0("var|rlevel|mu|xi|sigma|max.i",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
+      print(paste0("var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
@@ -189,7 +189,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
       sigma <- as.numeric(unlist(infos["sigma"]))
       xi <- as.numeric(unlist(infos["xi"]))
       
-      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
+      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
