@@ -128,7 +128,9 @@ plotThetaDistanceLag <- function (df.res) {
 #################################################
 
 # Collect data
-years <- seq(2000,2012)
+years <- seq(2000,2012) # Graphe actuel
+
+years <- seq(1961,2012) 
 # years <- c(2012)
 res.total <- NULL
 count<-0

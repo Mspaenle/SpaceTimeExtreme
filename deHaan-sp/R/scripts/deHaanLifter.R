@@ -51,8 +51,6 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.y[Xs.3.i.y > 9999] <- 9999
    Xs.3.i.y[Xs.3.i.y < -9999] <- -9999
    
-   save(Xs.3.i.y,file = "../../work/xs3.i.y.RData")
-   
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
                             Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
                             Xs.2.y = Xs.2.i.y, Xs.3.y = Xs.3.i.y, varid.y, grid)
