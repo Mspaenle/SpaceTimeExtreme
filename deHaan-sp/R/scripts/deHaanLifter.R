@@ -20,7 +20,8 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
   y.inverse.estim.xi.s <- rep(1/y.estim.xi.s)
   nc_close(nc.parameters)
   
-  if (var.y=="tp") {varid.y<-"fp"} else {varid.x<-var.x}
+  if (var.x=="tp") {varid.x<-"fp"} else {varid.x<-var.x}
+  if (var.y=="tp") {varid.y<-"fp"} else {varid.y<-var.y}
   
   for (i in 1:length(Xs.1)) {
    Xs.1.nc <- nc_open(unlist(Xs.1[i]),readunlim = FALSE)
