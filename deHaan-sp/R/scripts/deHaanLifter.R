@@ -20,24 +20,23 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
   y.inverse.estim.xi.s <- rep(1/y.estim.xi.s)
   nc_close(nc.parameters)
   
-  
-  if (var.x=="tp") {varid.x<-"fp"} else {varid.x<-var.x}
   if (var.y=="tp") {varid.y<-"fp"} else {varid.x<-var.x}
   
   for (i in 1:length(Xs.1)) {
    Xs.1.nc <- nc_open(unlist(Xs.1[i]),readunlim = FALSE)
-   
    X <- as.vector(ncvar_get(nc = Xs.1.nc,varid.x))
    Y <- as.vector(ncvar_get(nc = Xs.1.nc,varid.y))
    nc_close(Xs.1.nc)
    
+   if (var.y=="tp") {Y <- 1/Y}
+   
+   print(paste0("Storm-",i," t0i.hs|t0i.tp ",t0.i$x[i],"|",t0.i$y[i]))
+   
    Xs.2.i.x <- t0.i$x[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
    Xs.2.i.y <- t0.i$y[i] * (( 1 + x.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
    
-   
    Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
    Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
-   
    
    Xs.2.i.x[is.na(Xs.2.i.x)] <- -9999
    Xs.2.i.y[is.na(Xs.2.i.y)] <- -9999
@@ -52,8 +51,8 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Xs.3.i.y[Xs.3.i.y < -9999] <- -9999
    
    addSeriesToOriginalStorm(originalStorm.nc = unlist(Xs.1[i]),
-                            Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, varid.x,
-                            Xs.2.y = Xs.2.i.y, Xs.3.y = Xs.3.i.y, varid.y, grid)
+                            Xs.2.x = Xs.2.i.x, Xs.3.x = Xs.3.i.x, var.x,
+                            Xs.2.y = Xs.2.i.y, Xs.3.y = Xs.3.i.y, var.y, grid)
   }
   
   return(Xs.1)
@@ -75,7 +74,8 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x,
   for (i in 1:in.nc$nvar) {
     v <- in.nc$var[[i]]
     if (v$name %in% varid.x) {units.var.x <- v$units }
-    if (v$name %in% varid.y) {units.var.y <- v$units }
+#     if (v$name %in% varid.y) {units.var.y <- v$units }
+    units.var.y <- "s"
   }
   for (i in 1:in.nc$ndim) {
     d <- in.nc$dim[[i]]
