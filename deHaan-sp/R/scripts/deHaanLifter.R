@@ -147,7 +147,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = ref.t0, grid = grid)
-      t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))qge^(1/xi)
+      t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
     }
   } else if (t0.mode == 3) {
