@@ -168,6 +168,8 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obs
       
       m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi, lower.tail = FALSE)
       
+      print(paste0("var|rlevel|mu|xi|sigma|max.i",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
+      
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
     }
