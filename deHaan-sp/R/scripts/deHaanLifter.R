@@ -33,17 +33,19 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    
    print(paste0("Storm-",i," t0i.hs|t0i.tp ",t0.i$x[i],"|",t0.i$y[i]))
    
+   #  Zeta_i * T(X)
    Xs.2.i.x <- t0.i$x[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
    Xs.2.i.y <- t0.i$y[i] * (( 1 + x.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
    
-   Xs.3.i.x <- x.estim.sigma.s * ( ((Xs.2.i.x)^x.estim.xi.s) - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
-   Xs.3.i.y <- y.estim.sigma.s * ( ((Xs.2.i.y)^y.estim.xi.s) - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
+   # T^(-1)(Y), Y = Zeta_i * T(X)
+   Xs.3.i.x <- x.estim.sigma.s * ( (Xs.2.i.x)^x.estim.xi.s - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
+   Xs.3.i.y <- y.estim.sigma.s * ( (Xs.2.i.y)^y.estim.xi.s - 1 ) * y.inverse.estim.xi.s + y.estim.mu.s
    
+   # Numerical control to avoid ncdf errors
    Xs.2.i.x[is.na(Xs.2.i.x)] <- -9999
    Xs.2.i.y[is.na(Xs.2.i.y)] <- -9999
    Xs.2.i.x[is.infinite(Xs.2.i.x)]  <- 9999
    Xs.2.i.y[is.infinite(Xs.2.i.y)]  <- 9999
-   
    Xs.3.i.x[is.na(Xs.3.i.x)] <- -9999
    Xs.3.i.y[is.na(Xs.3.i.y)] <- -9999
    Xs.3.i.x[is.infinite(Xs.3.i.x)]  <- 9999
