@@ -10,6 +10,7 @@ require(ncdf4)
 #
 Xs <- function (file,var,index.location,grid=TRUE) {
   nc<-nc_open(file)
+  varid<-var
   if (!file.exists(file)) stop (paste("netcdf file ",file,"doesn't exist.",sep=""))
   if (grid) {
     # Assuming var is a variable along (time,longitude,latitude) dimensions
@@ -18,15 +19,7 @@ Xs <- function (file,var,index.location,grid=TRUE) {
     timeserie <- ncvar_get(nc,varid = varid, start = c(index.location[1],index.location[2],1), count = c(1,1,-1))
   } else {
     # Assuming var is a variable along (time,node) dimensions
-    if (var=="tp") {
-      varid<-"fp" 
-      timeserie <- ncvar_get(nc,varid = varid, start = c(index.location[1],1), count = c(1,-1))
-      timeserie <- 1/timeserie
-    } else {
-      varid<-var
-      timeserie <- ncvar_get(nc,varid = varid, start = c(index.location[1],1), count = c(1,-1))
-    }
-    
+    timeserie <- ncvar_get(nc, varid = varid, start = c(index.location[1],1), count = c(1,-1))
   }
   #read nc file and store time serie into a dataframe
   date <- ncvar_get(nc,varid = "time")
