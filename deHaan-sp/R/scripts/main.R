@@ -22,10 +22,6 @@ paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cm
 paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
 ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 
-print("so far so good ?????!!!")
-mpi.close.Rslaves()
-mpi.quit()
-
 #------------------------------------------------------------------------------#
 # 3/ Decluster data to obtain X^1(s) storms
 source("decluster.R")
@@ -39,9 +35,16 @@ if (!env.restart.marginsfit) {
   createMarginScaleParameters(env.file, env.var.x, proba = env.p, 
                               r=env.consecutivebelow, cmax=env.cmax, 
                               tmpfitinfo.file = env.tmpfitinfo.file.x, grid=env.grid)
+} 
+
+print("so far so good ?????!!!")
+mpi.close.Rslaves()
+mpi.quit()
+
+if (!env.restart.standardization) {
   print("Normalize")
   normalizeMargins(env.file, env.var.x, env.tmpfitinfo.file.x, normalizedfile = env.tmpnormalized.file)
-} 
+}
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")

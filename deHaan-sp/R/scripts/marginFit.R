@@ -359,3 +359,8 @@ normalizeMargins <- function (file, var, tmpfitinfo.file, normalizedfile) {
   system(command = paste(env,"ncks -A", normalizedfile, tmpfitinfo.file))
   system(command = paste(env,"rm", normalizedfile, tmp.char))
 }
+
+# (Parallel function) Standardize margins using Pareto transformation
+PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile) {
+  
+}

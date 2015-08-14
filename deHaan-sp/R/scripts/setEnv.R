@@ -33,6 +33,7 @@ env.init.time <- as.numeric(properties["init.time"])
 # DEBUG MODE #
 ##############
 env.restart.marginsfit <- as.logical(properties["restart.marginsfit"])
+env.restart.standardization <- as.logical(properties["restart.standardization"])
 hasDeclusteredStorm <- as.logical(properties["hasDeclusteredStorm"])
 
 # MODEL PARAMETRISATION #
@@ -40,7 +41,7 @@ hasDeclusteredStorm <- as.logical(properties["hasDeclusteredStorm"])
 env.p <- as.numeric(properties["p"]) #t<-100; p<-1/t # Above every "nobs" observations => timeseries * 1/nobs => t=nobs
 env.obsperyear <- as.numeric(properties["margin.observation.per.year"])
 
-env.cmax <- as.logical(properties["cmax"]) # allow decluster when GPD (margins) fitting
+env.cmax <- as.logical(properties["cmax"]) # allow decluster when GPD or GEV other threshold (margins) fitting
 env.consecutivebelow <- as.integer(properties["consecutivebelow"])
 
 env.margin.transformation.mode <- as.integer(properties["margin.transformation.mode"])
