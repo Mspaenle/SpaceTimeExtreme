@@ -382,7 +382,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     # 1 = task ; 2 = done_tasks
     done <- 0
     junk <- 0
-    cat("start\n")
     while (done !=1) {
       master<-0 ; ready4task<-1
       #signal being ready to receive a new task
@@ -398,9 +397,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           cat("ncfile open\n")
           
           # Read time serie of a node indexed by x
-          ncfile <- nc_open(filename = file,readunlim = FALSE)
           Xs <- Xs(file,var,index.location=c(x),grid=grid)
-          nc_close(ncfile)
           
           cat("retrieve info params\n")
           
@@ -489,8 +486,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         mpi.send.Robj(junk,slave_id,2)
       }
     } else if (tag == 2) {
-      print("got a result")
-      
       #message contains results. Deal with it.
       res<-message
       
