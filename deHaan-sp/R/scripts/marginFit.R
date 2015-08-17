@@ -435,6 +435,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   mpi.bcast.Robj2slave(standardizePareto)
   mpi.bcast.Robj2slave(tmpfitinfo.file)
   mpi.bcast.Robj2slave(file)
+  mpi.bcast.Robj2slave(env.file)
   mpi.bcast.Robj2slave(var)
   mpi.bcast.Robj2slave(grid)
   mpi.bcast.Robj2slave(Xs)
