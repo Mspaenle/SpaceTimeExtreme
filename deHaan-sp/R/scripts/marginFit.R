@@ -369,6 +369,8 @@ standardizePareto <- function (Xs, mu, sigma, xi) {
 PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, grid=TRUE) {
   require(Rmpi)
   require(ncdf4)
+  prec="single"
+  missval=1.e30
   
   #Introduce function to marginally transform data at a standard scale using General pareto transformation
   TransfoT <- function() {
