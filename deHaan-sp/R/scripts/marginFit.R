@@ -361,7 +361,11 @@ normalizeMargins <- function (file, var, tmpfitinfo.file, normalizedfile) {
 
 # Function to standardize a time series given the estimated parameters of the GEV fitted over a threshold u
 standardizePareto <- function (Xs, mu, sigma, xi) {
-  Xs.standardized <- (1 + xi * ( (Xs - mu) / sigma ) )^(1/xi) 
+  r <- length(Xs)
+  mu.s <- rep(x = mu,times = r)
+  sigma.s <- rep(x = sigma,times = r)
+  xi.s <- rep(x = xi,times = r)
+  Xs.standardized <- (1 + xi.s * ( (Xs - mu.s) / sigma.s ) )^(1/xi.s) 
   return (Xs.standardized)
 }
 
