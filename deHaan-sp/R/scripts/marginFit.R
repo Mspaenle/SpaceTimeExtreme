@@ -396,8 +396,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         tryCatch({
           x<-as.numeric(unlist(task))
           
-          cat(paste0(file,"\t",var,"\t",x,"\t",tmpfitinfo.file,"\n"))
-          
           # Read time serie of a node indexed by x
           Xs <- Xs(file,var,index.location=c(x),grid=grid)
           
@@ -413,9 +411,11 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           cat("compute\n")
           
           # Compute the standardized vector
-          Xs.standardized <- standardizePareto(Xs = Xs, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
+          Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
           
-      }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
+          cat("compute finished\n")
+          
+      }, error = function(e) {print(e)); bug<-TRUE})
         if (bug) {
           result<-list(error=error)
           mpi.send.Robj(result,0,4) 
