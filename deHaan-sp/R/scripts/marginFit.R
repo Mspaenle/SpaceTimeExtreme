@@ -399,9 +399,9 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         Xs <- Xs(file,var,index.location=c(x),grid=grid)
         # Get estimated parameters of the GEV over u at this location
         nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
-        estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s")
-        estim.xi.s <- ncvar_get(nc = nc.parameters,"xi_s")
-        estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s")
+        estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s",start = x, count = 1)
+        estim.xi.s <- ncvar_get(nc = nc.parameters,"xi_s",start = x, count = 1)
+        estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s",start = x, count = 1)
         nc_close(nc.parameters)
         
         # Compute the standardized vector
@@ -419,7 +419,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     mpi.send.Robj(junk,0,3)
   }
   
-  #SEND OBJECTS NEEDED BY THE SLAVES
+  #Broadcast objects and function
   mpi.bcast.Robj2slave(TransfoT)
   mpi.bcast.Robj2slave(standardizePareto)
   mpi.bcast.Robj2slave(tmpfitinfo.file)
@@ -432,7 +432,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   print("slaves launched")
   
   ## Master part
-  #Create new ncfile with sames dimensions than file
+  #Create new ncfile with sames dimensions as file
   in.nc <- nc_open(filename = file,readunlim = FALSE)
   node <- ncvar_get(in.nc,"node")
   time <- ncvar_get(in.nc,"time")
@@ -453,8 +453,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     tasks[i] <- list(i=i)
   }
   
-  str(tasks)
-  
   closed_slaves<-0
   n_slaves<-mpi.comm.size()-1
   junk<-0
@@ -466,7 +464,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     slave_id <- message_info[1]
     tag <- message_info[2]
     if (tag == 1) {
-      print("tag1")
       #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
       if (length(tasks) > 0) {
         #send a task and remove it from the list
@@ -478,6 +475,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         mpi.send.Robj(junk,slave_id,2)
       }
     } else if (tag == 2) {
+      print("got a result")
+      
       #message contains results. Deal with it.
       res<-message
       

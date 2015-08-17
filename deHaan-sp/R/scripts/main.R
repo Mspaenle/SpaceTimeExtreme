@@ -86,12 +86,6 @@ t0.i.y <- computetzeroi(Xs.1,env.var.y,env.t0.mode,paramsXsGEV.Y,
 t0.i <- data.frame(x=t0.i.x,y=t0.i.y)
 
 
-#------------------------------------------------------------------------------#
-# Find out if we need local empirical distribution function. If so, compute them
-if (env.margin.transformation.mode != 4) {
-  
-}
-
 # 5/ Transform X^1(s) to X^2(s) using t0
 # 6/ Transform X^2(s) to X^3(s) in order to obtain original scaled values
 print("Lift")
