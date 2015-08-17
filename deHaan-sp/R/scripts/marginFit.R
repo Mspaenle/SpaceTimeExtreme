@@ -304,7 +304,6 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       for (x in 1:length(node)) {
         print(paste("Margin GEV-over-Exceedances - Node:",x))
         
-        # TO DO BIVARIATE CASE #
         Xs.ref <- Xs(file,var,index.location=c(x),grid=grid)
         paramsXsGEV <- marginGEVExceedanceFit(x = Xs.ref$var, quantile = 1-proba, cmax = cmax, r = r)
         
@@ -360,7 +359,130 @@ normalizeMargins <- function (file, var, tmpfitinfo.file, normalizedfile) {
   system(command = paste(env,"rm", normalizedfile, tmp.char))
 }
 
-# (Parallel function) Standardize margins using Pareto transformation
-PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile) {
-  
+# Function to standardize a time series given the estimated parameters of the GEV fitted over a threshold u
+standardizePareto <- function (Xs, mu, sigma, xi) {
+  Xs.standardized <- (1 + xi * ( (Xs - mu) / sigma ) )^(1/xi) 
+  return (Xs.standardized)
 }
+
+# (Parallel function) Standardize margins using Pareto transformation
+PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, grid=TRUE) {
+  require(Rmpi)
+  require(ncdf4)
+  
+  #Introduce function to marginally transform data at a standard scale using General pareto transformation
+  TransfoT <- function() {
+    require(ncdf4)
+    
+    # Tag for sent messages : 
+    # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
+    # Tag for receive messages :
+    # 1 = task ; 2 = done_tasks
+    done <- 0
+    junk <- 0
+    while (done !=1) {
+      master<-0 ; ready4task<-1
+      #signal being ready to receive a new task
+      mpi.send.Robj(junk,master,ready4task)
+      #receive a task
+      task <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
+      task_info <- mpi.get.sourcetag()
+      tag <- task_info[2]
+      bug=FALSE
+      result<-NULL
+      if (tag == 1) { #task to perform
+        ncfile <- nc_open(filename = file,readunlim = FALSE)
+        
+        # Read time serie of a node indexed by x
+        Xs <- Xs(file,var,index.location=c(x),grid=grid)
+        # Get estimated parameters of the GEV over u at this location
+        nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
+        estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s")
+        estim.xi.s <- ncvar_get(nc = nc.parameters,"xi_s")
+        estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s")
+        nc_close(nc.parameters)
+        
+        # Compute the standardized vector
+        Xs.standardized <- standardizePareto(Xs = Xs, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
+        
+        result <- list(xs = Xs.standardized, node=x)
+        # Return to the master
+        mpi.send.Robj(result,0,2)
+      } else if (tag==2) { #no more job to do
+            done <-1
+      }
+    }
+    #exiting
+    mpi.send.Robj(junk,0,3)
+  }
+  
+  #SEND OBJECTS NEEDED BY THE SLAVES
+  mpi.bcast.Robj2slave(TransfoT)
+  mpi.bcast.Robj2slave(standardize)
+  mpi.bcast.Robj2slave(tmpfitinfo.file)
+  mpi.bcast.Robj2slave(file)
+  mpi.bcast.Robj2slave(var)
+  mpi.bcast.Robj2slave(grid)
+  mpi.bcast.Robj2slave(Xs)
+  print("data broadcasted")
+  mpi.bcast.cmd(TransfoT())
+  print("slaves launched")
+  
+  ## Master part
+  #Create new ncfile with sames dimensions than file
+  in.nc <- nc_open(filename = file,readunlim = FALSE)
+  node <- ncvar_get(in.nc,"node")
+  time <- ncvar_get(in.nc,"time")
+  for (i in 1:in.nc$ndim) {
+    d <- in.nc$dim[[i]]
+    if (d$name %in% "time") {units.time <- d$units ;break}
+  }
+  nc_close(in.nc)
+  
+  dimNode <- ncdim_def("node", "count", node)
+  dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
+  varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
+                                 missval=missval,prec="float",compression = 9)
+  out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
+  #create take list
+  tasks <- vector('list')
+  for (i in 1:length(node)) {  
+    tasks[i] <- list(i=i)
+  }
+  closed_slaves<-0
+  n_slaves<-mpi.comm.size()-1
+  junk<-0
+  # Send tasks to slaves
+  while (closed_slaves < n_slaves) {
+    #receive message from a slave
+    message <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
+    message_info <- mpi.get.sourcetag()
+    slave_id <- message_info[1]
+    tag <- message_info[2]
+    if (tag == 1) {
+      #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
+      if (length(tasks) > 0) {
+        #send a task and remove it from the list
+        mpi.send.Robj(tasks[1],slave_id,1)
+        tasks[1] <- NULL
+      } else {
+        #send signal that all tasks are already handled
+        print("All tasks are handled. Signal to close down the slave...")
+        mpi.send.Robj(junk,slave_id,2)
+      }
+    } else if (tag == 2) {
+      #message contains results. Deal with it.
+      res<-message
+      
+      #Get the result and put it into out.nc file at node location
+      ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+      
+      print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
+    } else if (tag == 3) {
+      #a slave has closed down.
+      closed_slaves <- closed_slaves + 1
+    }
+  }
+  nc_close(out.nc)
+}
+

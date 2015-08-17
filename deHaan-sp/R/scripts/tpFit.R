@@ -4,9 +4,7 @@ source("setEnv.R")
 # 1/ GET a time series X(s) indexed by s = node number
 # source("extractTimeSerie.R")
 # print("Extract Ref Location Timeserie")
-if (env.var.y=="tp") { var.y <- "fp" }
 Xs.ref.y <- Xs(env.file, var.y, index.location=2000, grid=env.grid)
-if (env.var.y=="tp") { Xs.ref.y$var <- 1/Xs.ref.y$var }
 
 
 # amin function to fit mu sigma xi
