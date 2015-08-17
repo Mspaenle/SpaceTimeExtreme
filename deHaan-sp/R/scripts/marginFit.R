@@ -424,7 +424,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           mpi.send.Robj(result,0,4) 
         } else {
           # Return to the master
-          result <- list(xs = Xs.standardized, node=x)
+#           result <- list(xs = Xs.standardized, node=x)
+          result <- list(node=x)
           mpi.send.Robj(result,0,2)
         }
       } else if (tag==2) { #no more job to do
