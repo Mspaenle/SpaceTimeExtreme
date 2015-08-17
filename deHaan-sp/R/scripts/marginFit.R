@@ -382,6 +382,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     # 1 = task ; 2 = done_tasks
     done <- 0
     junk <- 0
+    cat("start\n")
     while (done !=1) {
       master<-0 ; ready4task<-1
       #signal being ready to receive a new task
@@ -393,27 +394,39 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       bug=FALSE
       result<-NULL
       if (tag == 1) { #task to perform
-        
-        ncfile <- nc_open(filename = file,readunlim = FALSE)
-        
-        # Read time serie of a node indexed by x
-        Xs <- Xs(file,var,index.location=c(x),grid=grid)
-        # Get estimated parameters of the GEV over u at this location
-        nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
-        estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s",start = x, count = 1)
-        estim.xi.s <- ncvar_get(nc = nc.parameters,"xi_s",start = x, count = 1)
-        estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s",start = x, count = 1)
-        nc_close(nc.parameters)
-        
-        # Compute the standardized vector
-        Xs.standardized <- standardizePareto(Xs = Xs, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
-        
-        # Return to the master
-        result <- list(xs = Xs.standardized, node=x)
-        mpi.send.Robj(result,0,2)
-        
+        tryCatch({
+          cat("ncfile open\n")
+          
+          # Read time serie of a node indexed by x
+          ncfile <- nc_open(filename = file,readunlim = FALSE)
+          Xs <- Xs(file,var,index.location=c(x),grid=grid)
+          nc_close(ncfile)
+          
+          cat("retrieve info params\n")
+          
+          # Get estimated parameters of the GEV over u at this location
+          nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
+          estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s",start = x, count = 1)
+          estim.xi.s <- ncvar_get(nc = nc.parameters,"xi_s",start = x, count = 1)
+          estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s",start = x, count = 1)
+          nc_close(nc.parameters)
+          
+          cat("compute\n")
+          
+          # Compute the standardized vector
+          Xs.standardized <- standardizePareto(Xs = Xs, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
+          
+      }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
+        if (bug) {
+          result<-list(error=error)
+          mpi.send.Robj(result,0,4) 
+        } else {
+          # Return to the master
+          result <- list(xs = Xs.standardized, node=x)
+          mpi.send.Robj(result,0,2)
+        }
       } else if (tag==2) { #no more job to do
-            done <-1
+        done <-1
       }
     }
     #exiting
