@@ -407,9 +407,10 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         # Compute the standardized vector
         Xs.standardized <- standardizePareto(Xs = Xs, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
         
-        result <- list(xs = Xs.standardized, node=x)
         # Return to the master
+        result <- list(xs = Xs.standardized, node=x)
         mpi.send.Robj(result,0,2)
+        
       } else if (tag==2) { #no more job to do
             done <-1
       }
@@ -451,6 +452,9 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   for (i in 1:length(node)) {  
     tasks[i] <- list(i=i)
   }
+  
+  str(tasks)
+  
   closed_slaves<-0
   n_slaves<-mpi.comm.size()-1
   junk<-0
@@ -462,6 +466,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     slave_id <- message_info[1]
     tag <- message_info[2]
     if (tag == 1) {
+      print("tag1")
       #slave is ready for a task. Fetch next or send end-tag in case all tasks are computed.
       if (length(tasks) > 0) {
         #send a task and remove it from the list
