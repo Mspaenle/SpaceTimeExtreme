@@ -25,6 +25,7 @@ env.var.y <- as.character(properties["var.y"])
 env.outdir <- paste(workdir,properties["outdir"],sep="/")
 
 env.tmpnormalized.file <- paste(workdir,properties["tmpnormalized"],sep="/")
+env.tmpstandardized.file.x <- paste(workdir,properties["tmpstandardized"],sep="/")
 # file.in <- env.tmpnormalized.file # normalized data
 env.tmpfitinfo.file.x <- paste(workdir,properties["tmpfitinfo.x"],sep="/")
 env.tmpfitinfo.file.y <- paste(workdir,properties["tmpfitinfo.y"],sep="/")

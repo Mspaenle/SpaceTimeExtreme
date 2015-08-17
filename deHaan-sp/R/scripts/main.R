@@ -37,6 +37,8 @@ if (!env.restart.marginsfit) {
                               tmpfitinfo.file = env.tmpfitinfo.file.x, grid=env.grid)
 } 
 
+str(env.standardized.file.x)
+
 if (!env.restart.standardization) {
 #   print("Normalize")
 #   normalizeMargins(env.file, env.var.x, env.tmpfitinfo.file.x, normalizedfile = env.tmpnormalized.file)
