@@ -9,7 +9,7 @@ require(ncdf4)
 # - FILE.ORIGIN origin file to extract storm
 # - K is the number of cluster the user want to extract, default is NULL and means every cluster available.
 # - THRESHOLD is the threshold to define exceedances.
-# - FILE.TMPFITINFO is path to a file containing the normalized.
+# - FILE.STANDARDIZED is path to a file containing the normalized.
 # regarding their local fits through NCBO binary op. (see NCO). It is used when max are searched at any locations of the area.
 # - DELTA is the length (in unit of time step of date dimension) of a storm.
 # - DELTAR is the length (in unit of time step of date dimension) of observations to remove from each side of a storm to
@@ -24,7 +24,7 @@ require(ncdf4)
 #
 decluster <- function (var,
                        file.origin, # origin file
-                       file.tmpfitinfo, # file containing marginal gpd fits info + transformed data
+                       file.standardized, # file containing marginal standardized data
                        k=NULL,
                        threshold=NULL,
                        delta,
@@ -37,32 +37,32 @@ decluster <- function (var,
   if (rdelta < delta) warning("choose a Rdelta lower than Delta may results to inconsistent independant storms !")
   
   storms <- list()
-  varnorm <- paste(var,"_normalized",sep="")
-  hyperslab.remaining.peak <- initHyperslabRemaining(file.tmpfitinfo)
+  var.standard <- paste(var,"_standard",sep="")
+  hyperslab.remaining.peak <- initHyperslabRemaining(file.standardized)
   
   files.hyperslabs <- NULL
   
   if (has.hyperslab.reference){
-    files.hyperslabs <- createhyperslabsfiles(file.tmpfitinfo,varnorm,index.ref.location)
+    files.hyperslabs <- createhyperslabsfiles(file.standardized,var.standard,index.ref.location)
   }  
   
-  hasDataAbove <- hasDataAbove(file.tmpfitinfo,threshold,varnorm,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
+  hasDataAbove <- hasDataAbove(file.standardized,threshold,var.standard,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
   j <- 0
   print(paste("(Decluster Storm) Completion:",j,"on targeted",storms.tot, "storm(s)"))
   hyperslab.storms <- NULL 
   while (storms.tot > 0 & hasDataAbove) {
-    t.max <- getMaxTimeValue(varnorm,file.tmpfitinfo,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs,init.time)
+    t.max <- getMaxTimeValue(var.standard,file.standardized,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs,init.time)
     hyperslab.storm <- data.frame(start = t.max-delta, end = t.max+delta)
     print("storm:")
     str(hyperslab.storm)
     if (hasTimeOverflows(hyperslab.storms,hyperslab.storm)) warning(paste("Storm",j,"has a time overflow regarding selected storms."))
     hyperslab.storms <- rbind(hyperslab.storms,hyperslab.storm)
     
-    storm <- extractStorm(file.origin,file.tmpfitinfo,varnorm,hyperslabToString(hyperslab.storm),grid,outputDir,j)
+    storm <- extractStorm(file.origin,file.standardized,var.standard,hyperslabToString(hyperslab.storm),grid,outputDir,j)
     storms <- c(storms,storm)
     
     hyperslab.remaining.peak <- getHyperslabRemaining(hyperslab.remaining.peak,hyperslab.storm,rdelta)
-    hasDataAbove <- hasDataAbove(file.tmpfitinfo,threshold,varnorm,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
+    hasDataAbove <- hasDataAbove(file.standardized,threshold,var.standard,hyperslabToString(hyperslab.remaining.peak),index.ref.location,grid,files.hyperslabs)
     
     j <- j+1
     print(paste("(Decluster Storm) Completion:",j,"on targeted",k,"storm(s)"))
@@ -74,12 +74,12 @@ decluster <- function (var,
 }
 
 # Returns ncfile of the selected storm (within hyperslab.storm.string)
-extractStorm <- function (file,file.tmpfitinfo,varnormalized,hyperslab.storm.string,grid,outputDir,k) {
+extractStorm <- function (file,file.standardized,var.standard,hyperslab.storm.string,grid,outputDir,k) {
   storm.nc <- paste(outputDir,"/storm-",k,".nc",sep="")
-  tmp.nc <- paste(workdirtmp,"/normalizedvar-storm-",k,".nc",sep="")
+  tmp.nc <- paste(workdirtmp,"/standardizedvar-storm-",k,".nc",sep="")
   
   system(command = paste(env,"ncks -4 -O",hyperslab.storm.string,file,storm.nc))
-  system(command = paste(env,"ncks -4 -O -v",varnormalized,hyperslab.storm.string,file.tmpfitinfo,tmp.nc))
+  system(command = paste(env,"ncks -4 -O -v",var.standard,hyperslab.storm.string,file.standardized,tmp.nc))
   system(command = paste(env,"ncks -A ",tmp.nc,storm.nc))
   
   return(storm.nc)

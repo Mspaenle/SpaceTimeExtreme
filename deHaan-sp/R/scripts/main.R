@@ -53,11 +53,11 @@ mpi.quit()
 print("Decluster")
 if (!hasDeclusteredStorm) {
   if (!has.hyperslab.reference) {
-    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file.x, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.standardized.file.x, k = env.nbrstorms, threshold = ref.threshold, 
                       delta = env.delta, rdelta = env.rdelta, index.ref.location = ref.fixed, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   } else {
-    Xs.1 <- decluster(env.var.x, env.file, env.tmpfitinfo.file.x, k = env.nbrstorms, threshold = ref.threshold, 
+    Xs.1 <- decluster(env.var.x, env.file, env.standardized.file.x, k = env.nbrstorms, threshold = ref.threshold, 
                       delta=env.delta, rdelta = env.rdelta, index.ref.location = ref.hyperslab, grid = env.grid, 
                       outputDir = env.outdir, init.time = env.init.time)  
   }
@@ -70,7 +70,7 @@ if (!hasDeclusteredStorm) {
 }
 
 #------------------------------------------------------------------------------#
-source("deHaanLifter.R")
+source("lifter.R")
 # 4/ Determine t0 (or t0.i) s.t. such that in case env.t0.mode equal
 # 1 = 1/t*t0 will be the targeted probability of the return level b.tt0
 # 2 = the within-cluster maxima at reference station reach the targeted ym return value
