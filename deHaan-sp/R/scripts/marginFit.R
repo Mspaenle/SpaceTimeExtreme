@@ -396,6 +396,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         tryCatch({
           x<-as.numeric(unlist(task))
           
+          cat(paste0(file,"\t",var,"\t",x,"\t",tmpfitinfo.file,"\n"))
+          
           # Read time serie of a node indexed by x
           Xs <- Xs(file,var,index.location=c(x),grid=grid)
           
