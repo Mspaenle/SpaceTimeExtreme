@@ -29,8 +29,6 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    Y <- as.vector(ncvar_get(nc = Xs.1.nc,varid.y))
    nc_close(Xs.1.nc)
    
-   if (var.y=="tp") {Y <- 1/Y}
-   
    print(paste0("Storm-",i," t0i.hs|t0i.tp ",t0.i$x[i],"|",t0.i$y[i]))
    
    #  Zeta_i * T(X)
@@ -96,16 +94,10 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x,
                            missval=missval,prec="float",compression = 9)
     var.y.lifted <- ncvar_def(paste(varid.y,"_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
                               missval=missval,prec="float",compression = 9)
-#     var.x.normalized.uplifted <- ncvar_def(paste(varid.x,"_normalized_uplifted",sep=""),units.var.x,list(dimNode,dimTime),
-#                            missval=missval,prec="float",compression = 9)
-#     var.y.normalized.uplifted <- ncvar_def(paste(varid.y,"_normalized_uplifted",sep=""),units.var.y,list(dimNode,dimTime),
-#                                            missval=missval,prec="float",compression = 9)
-#     tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted,var.x.normalized.uplifted,var.y.normalized.uplifted),force_v4 = TRUE)
     tmp<-nc_create(filename = tmp.nc,vars = list(var.x.lifted,var.y.lifted),force_v4 = TRUE)
+    
     ncvar_put(tmp,varid = paste(varid.x,"_uplifted",sep=""),vals = Xs.3.x,start=c(1,1),count=c(-1,-1))
     ncvar_put(tmp,varid = paste(varid.y,"_uplifted",sep=""),vals = Xs.3.y,start=c(1,1),count=c(-1,-1))
-#     ncvar_put(tmp,varid = paste(varid.x,"_normalized_uplifted",sep=""),vals = Xs.2.x,start=c(1,1),count=c(-1,-1))
-#     ncvar_put(tmp,varid = paste(varid.y,"_normalized_uplifted",sep=""),vals = Xs.2.y,start=c(1,1),count=c(-1,-1))
   }
   nc_close(in.nc)
   nc_close(tmp)
@@ -118,25 +110,22 @@ addSeriesToOriginalStorm <- function (originalStorm.nc, Xs.2.x, Xs.3.x, varid.x,
 # 3 = the within-cluster maxima -- over locations inside the hyperslabs used for storm detection -- reach the targeted ym return value
 # 4 = the within-cluster maxima over-all locations reach the targeted ym return value
 # Return values in a vector
-computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, tmpfitinfo.file, ref.hyperslab ,grid) {
-  require(evd)
+computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile, consecutivebelow, obsperyear, m.returnperiod, cmax, ref.t0, tmpfitinfo.file, ref.hyperslab ,grid) {
   
   t0.i <- NULL
   
-  xi <- paramsXsGEV$shape
-  sigma <- paramsXsGEV$scale
-  mu <- paramsXsGEV$loc
-  u <- paramsXsGEV$threshold
-  
-  m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
-  
-  if (var=="tp") {
-    varid<-"fp" 
-  } else {
-    varid<-var 
-  }
+  varid<-var 
   
   if (t0.mode == 1) {
+    xi <- paramsXsGEV$shape
+    sigma <- paramsXsGEV$scale
+    mu <- paramsXsGEV$loc
+    u <- paramsXsGEV$threshold
+    ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, quantile = quantile, grid = grid)
+    m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
+                                           ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
+    
+    
     # Uplift the threshold to a targeted threshold b.tt0
     b.tt0 <- as.numeric(m.rlevel) 
     t0 <- (1 + xi*(b.tt0-mu)/sigma)^(1/xi)
@@ -279,8 +268,20 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
 
 }
 
-# Find and store Empirical functions in a 1D list
-empiricaldist <- function (file, var, tmpfitinfo.file, grid=TRUE) {
-  
+# Find return level corresponding to the annual.return.period from estimated marginal parameters
+estimatingStormReturnLevel <- function (annual.return.period, obs.per.year, ratio.exceedances, mu.hat, sigma.hat, xi.hat) {
+  p <- 1 / (annual.return.period * obs.per.year * ratio.exceedances)
+  zp <- mu.hat + sigma.hat * ( p^(xi.hat)- 1) / xi.hat
+  return(zp)
 }
 
+# Find ratio (nb.excs/nb.tot) between exceedances and number of observation of the time-series
+ratioExceedances <- function (file, var, location, quantile, grid) {
+  Xs <- Xs(file,var,location,grid)$var
+  threshold <- quantile(Xs, probs = quantile, na.rm = TRUE)
+  
+  nb.tot <- length(Xs[!is.na(Xs)])
+  nb.excs <- length(Xs[Xs > threshold])
+  
+  return(nb.excs/nb.tot)
+}
