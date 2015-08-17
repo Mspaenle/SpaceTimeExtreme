@@ -415,7 +415,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           
           cat("compute finished\n")
           
-      }, error = function(e) {print(e)); bug<-TRUE})
+      }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
         if (bug) {
           result<-list(error=error)
           mpi.send.Robj(result,0,4) 
