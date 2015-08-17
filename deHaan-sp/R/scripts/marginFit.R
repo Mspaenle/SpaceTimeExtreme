@@ -418,7 +418,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   
   #SEND OBJECTS NEEDED BY THE SLAVES
   mpi.bcast.Robj2slave(TransfoT)
-  mpi.bcast.Robj2slave(standardize)
+  mpi.bcast.Robj2slave(standardizePareto)
   mpi.bcast.Robj2slave(tmpfitinfo.file)
   mpi.bcast.Robj2slave(file)
   mpi.bcast.Robj2slave(var)
