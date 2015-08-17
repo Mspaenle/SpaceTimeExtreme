@@ -403,8 +403,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           # Read time serie of a node indexed by x
           Xs <- Xs(file,var,index.location=c(x),grid=grid)
           
-          cat("retrieve info params\n")
-          
           # Get estimated parameters of the GEV over u at this location
           nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
           estim.mu.s <- ncvar_get(nc = nc.parameters,"mu_s",start = x, count = 1)
@@ -412,12 +410,13 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s",start = x, count = 1)
           nc_close(nc.parameters)
           
-          cat("compute\n")
-          
           # Compute the standardized vector
           Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
           
-          cat("compute finished\n")
+          #it into out.nc file at node location
+          out.nc <- nc_open(filename = standardizedfile, write = TRUE, readunlim = FALSE)
+          ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+          nc_close(nc = out.nc)
           
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
         if (bug) {
@@ -448,6 +447,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   mpi.bcast.Robj2slave(env.var.x)
   mpi.bcast.Robj2slave(env.tmpfitinfo.file.x)
   mpi.bcast.Robj2slave(env.grid)
+  mpi.bcast.Robj2slave(standardizedfile)
   print("data broadcasted")
   mpi.bcast.cmd(TransfoT())
   print("slaves launched")
@@ -468,6 +468,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
                                  missval=missval,prec="float",compression = 9)
   out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
+  nc_close(out.nc)
   #create take list
   tasks <- vector('list')
   for (i in 1:length(node)) {  
@@ -499,8 +500,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       #message contains results. Deal with it.
       res<-message
       
-      #Get the result and put it into out.nc file at node location
-      ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+#       #Get the result and put it into out.nc file at node location
+#       ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
       
       print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
     } else if (tag == 3) {
@@ -511,6 +512,5 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       warning(res$error)
     } 
   }
-  nc_close(out.nc)
 }
 
