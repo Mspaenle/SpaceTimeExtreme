@@ -415,7 +415,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           
           #it into out.nc file at node location
           out.nc <- nc_open(filename = standardizedfile, write = TRUE, readunlim = FALSE)
-          ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+          ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
           nc_close(nc = out.nc)
           
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
