@@ -393,6 +393,7 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       bug=FALSE
       result<-NULL
       if (tag == 1) { #task to perform
+        
         ncfile <- nc_open(filename = file,readunlim = FALSE)
         
         # Read time serie of a node indexed by x
@@ -487,7 +488,10 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
     } else if (tag == 3) {
       #a slave has closed down.
       closed_slaves <- closed_slaves + 1
-    }
+    } else if (tag == 4) {
+      res<-message
+      warning(res$error)
+    } 
   }
   nc_close(out.nc)
 }
