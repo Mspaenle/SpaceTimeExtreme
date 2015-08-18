@@ -418,10 +418,11 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           
           #Get the result and put it into out.nc file at node location
           cat("transformed\n")
-          out.nc <- nc_open_par(filename = standardizedfile,write = TRUE,readunlim = FALSE)
+          cat(str(standardizedfile))
+          out.nc <- nc_open_par(filename = standardizedfile, write = TRUE, readunlim = FALSE)
           cat("file-par-open\n")
           ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
-          cat("file-written\n")
+          
           nc_close(out.nc)
           
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
@@ -476,7 +477,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
   varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
                                  missval=missval,prec="float",compression = 9)
-  out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
+  out.nc <- nc_create_par(standardizedfile,list(varStandardScaleX))
+#   out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
   nc_close(out.nc)
   #create take list
   tasks <- vector('list')
