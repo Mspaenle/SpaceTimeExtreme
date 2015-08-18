@@ -1,4 +1,5 @@
-require(ncdf4)
+#   require(ncdf4)
+require(pbdNCDF4)
 
 # Fit GPD
 margGPDfit <- function (data,quantile,r=1,cmax=FALSE) {
@@ -372,14 +373,14 @@ standardizePareto <- function (Xs, mu, sigma, xi) {
 # (Parallel function) Standardize margins using Pareto transformation
 PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, grid=TRUE) {
   require(Rmpi)
-  require(ncdf4)
+#   require(ncdf4)
   require(pbdNCDF4)
   prec="single"
   missval=1.e30
   
   #Introduce function to marginally transform data at a standard scale using General pareto transformation
   TransfoT <- function() {
-    require(ncdf4)
+    #   require(ncdf4)
     require(pbdNCDF4)
     
     # Tag for sent messages : 
@@ -416,8 +417,11 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
           
           #Get the result and put it into out.nc file at node location
+          cat("transformed\n")
           out.nc <- nc_open_par(filename = standardizedfile,write = TRUE,readunlim = FALSE)
+          cat("file-par-open\n")
           ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
+          cat("file-written\n")
           nc_close(out.nc)
           
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
