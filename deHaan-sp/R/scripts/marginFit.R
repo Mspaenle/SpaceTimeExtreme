@@ -373,12 +373,14 @@ standardizePareto <- function (Xs, mu, sigma, xi) {
 PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, grid=TRUE) {
   require(Rmpi)
   require(ncdf4)
+  require(pbdNCDF4)
   prec="single"
   missval=1.e30
   
   #Introduce function to marginally transform data at a standard scale using General pareto transformation
   TransfoT <- function() {
     require(ncdf4)
+    require(pbdNCDF4)
     
     # Tag for sent messages : 
     # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
@@ -413,13 +415,19 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           # Compute the standardized vector
           Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
           
+          #Get the result and put it into out.nc file at node location
+          out.nc <- nc_open_par(filename = standardizedfile,write = TRUE,readunlim = FALSE)
+          ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
+          nc_close(out.nc)
+          
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
         if (bug) {
           result<-list(error=error)
           mpi.send.Robj(result,0,4) 
         } else {
           # Return to the master
-          result <- list(xs = Xs.standardized, node=x)
+#           result <- list(xs = Xs.standardized, node=x)
+          result <- list(node=x)
           mpi.send.Robj(result,0,2)
         }
       } else if (tag==2) { #no more job to do
@@ -438,10 +446,12 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   mpi.bcast.Robj2slave(var)
   mpi.bcast.Robj2slave(grid)
   mpi.bcast.Robj2slave(Xs)  
+  mpi.bcast.Robj2slave(standardizedfile)
   mpi.bcast.Robj2slave(env.file)
   mpi.bcast.Robj2slave(env.var.x)
   mpi.bcast.Robj2slave(env.tmpfitinfo.file.x)
   mpi.bcast.Robj2slave(env.grid)
+  mpi.bcast.Robj2slave(env.standardized.file.x)
   
   print("data broadcasted")
   mpi.bcast.cmd(TransfoT())
@@ -495,10 +505,10 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       #message contains results. Deal with it.
       res<-message
       
-      #Get the result and put it into out.nc file at node location
-      out.nc <- nc_open(filename = standardizedfile,write = TRUE,readunlim = FALSE)
-      ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
-      nc_close(out.nc)
+#       #Get the result and put it into out.nc file at node location
+#       out.nc <- nc_open(filename = standardizedfile,write = TRUE,readunlim = FALSE)
+#       ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+#       nc_close(out.nc)
       
       print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
     } else if (tag == 3) {
