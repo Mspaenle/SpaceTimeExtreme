@@ -31,7 +31,7 @@ for (i in 1:length(node)) {
   t.stop <- Sys.time()
   tot <- t.stop - tot.start
   it <- t.stop - t.start
-  cat(paste("Node",i," | actual",Sys.time(),"| total",tot," | iteration", it))
+  cat(paste("Node",i,"\t actual",Sys.time(),"\t total",tot,"\t iteration", it,"\n"))
 }
 
 mpi.close.Rslaves()
