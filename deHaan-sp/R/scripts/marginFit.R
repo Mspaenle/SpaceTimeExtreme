@@ -474,8 +474,10 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   }
   nc_close(in.nc)
   
-  dimNode <- ncdim_def("node", "count", node)
-  dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
+  dimNode <- ncdim_def("node", "count", node,
+                       create_dimvar = TRUE)
+  dimTime <- ncdim_def("time", units.time, time,unlim=TRUE,
+                       create_dimvar = TRUE)
   varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
                                  missval=missval,prec="float",compression = 9)
   out.nc <- pbdNCDF4::nc_create_par(standardizedfile,list(varStandardScaleX),verbose= TRUE)
