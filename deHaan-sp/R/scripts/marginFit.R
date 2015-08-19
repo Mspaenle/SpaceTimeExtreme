@@ -422,8 +422,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           
           out.nc <- pbdNCDF4::nc_open_par(filename = standardizedfile, write = TRUE, readunlim = FALSE, verbose= TRUE)
           cat("file-par-open\n")
-          pbdNCDF4::ncvar_par_access(out.nc,paste0(var,"_standard"),collective=FALSE)
-          pbdNCDF4::ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
+          pbdNCDF4::nc_var_par_access(out.nc,paste0(var,"_standard"),collective=FALSE)
+          pbdNCDF4::nc_var_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
           nc_close(out.nc)
           
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
@@ -474,14 +474,13 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   }
   nc_close(in.nc)
   
-  dimNode <- ncdim_def("node", "count", node,
-                       create_dimvar = TRUE)
-  dimTime <- ncdim_def("time", units.time, time,unlim=TRUE,
-                       create_dimvar = TRUE)
+  dimNode <- ncdim_def("node", "count", node, create_dimvar = TRUE)
+#   dimTime <- ncdim_def("time", units.time, time, unlim=TRUE, create_dimvar = TRUE)
+  dimTime <- ncdim_def("time", units.time, time, create_dimvar = TRUE)
   varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
                                  missval=missval,prec="float",compression = 9)
-  out.nc <- pbdNCDF4::nc_create_par(standardizedfile,list(varStandardScaleX),verbose= TRUE)
-#   out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
+#   out.nc <- pbdNCDF4::nc_create_par(standardizedfile,list(varStandardScaleX),verbose= TRUE)
+  out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
   nc_close(out.nc)
   #create take list
   tasks <- vector('list')
