@@ -1,5 +1,5 @@
-#   require(ncdf4)
-require(pbdNCDF4)
+  require(ncdf4)
+# require(pbdNCDF4)
 
 # Fit GPD
 margGPDfit <- function (data,quantile,r=1,cmax=FALSE) {
@@ -380,8 +380,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   
   #Introduce function to marginally transform data at a standard scale using General pareto transformation
   TransfoT <- function() {
-    #   require(ncdf4)
-    require(pbdNCDF4)
+      require(ncdf4)
+#     require(pbdNCDF4)
     
     # Tag for sent messages : 
     # 1 = ready_for_task ; 2 = done_task ; 3 = exiting
@@ -416,21 +416,20 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           # Compute the standardized vector
           Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
           
-          #Get the result and put it into out.nc file at node location
-          out.nc <- pbdNCDF4::nc_open_par(filename = standardizedfile, write = TRUE, readunlim = FALSE, verbose= TRUE)
-          cat("file-par-open\n")
-          pbdNCDF4::nc_var_par_access(out.nc,paste0(var,"_standard"),collective=FALSE)
-          pbdNCDF4::ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
-          nc_close(out.nc)
-          
+#           #Get the result and put it into out.nc file at node location
+#           out.nc <- pbdNCDF4::nc_open_par(filename = standardizedfile, write = TRUE, readunlim = FALSE)
+#           cat("file-par-open\n")
+#           pbdNCDF4::nc_var_par_access(out.nc,paste0(var,"_standard"),collective=FALSE)
+#           pbdNCDF4::ncvar_put(out.nc,paste0(var,"_standard"),Xs.standardized,start=c(x,1),count=c(1,-1))
+#           nc_close(out.nc)
       }, error = function(e)  {print(paste("error:",e)); bug<-TRUE})
         if (bug) {
           result<-list(error=error)
           mpi.send.Robj(result,0,4) 
         } else {
           # Return to the master
-#           result <- list(xs = Xs.standardized, node=x)
-          result <- list(node=x)
+          result <- list(xs = Xs.standardized, node=x)
+#           result <- list(node=x)
           mpi.send.Robj(result,0,2)
         }
       } else if (tag==2) { #no more job to do
@@ -476,8 +475,8 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   dimTime <- ncdim_def("time", units.time, time, create_dimvar = TRUE)
   varStandardScaleX <- ncvar_def(paste0(var,"_standard"),"",list(dimNode,dimTime),
                                  missval=missval,prec="float",compression = 9)
-  out.nc <- pbdNCDF4::nc_create_par(standardizedfile,list(varStandardScaleX),verbose= TRUE)
-#   out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
+#   out.nc <- pbdNCDF4::nc_create_par(standardizedfile,list(varStandardScaleX),verbose= TRUE)
+  out.nc <- nc_create(standardizedfile,list(varStandardScaleX))
   nc_close(out.nc)
   #create take list
   tasks <- vector('list')
@@ -489,6 +488,9 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
   n_slaves<-mpi.comm.size()-1
   junk<-0
   # Send tasks to slaves
+  out.nc <- nc_open(filename = standardizedfile,write = TRUE,readunlim = FALSE)
+  
+  tot.start <- t.start.bis <- Sys.time()
   while (closed_slaves < n_slaves) {
     #receive message from a slave
     message <- mpi.recv.Robj(mpi.any.source(),mpi.any.tag())
@@ -507,15 +509,19 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         mpi.send.Robj(junk,slave_id,2)
       }
     } else if (tag == 2) {
+      t.start <- Sys.time()
       #message contains results. Deal with it.
       res<-message
       
-#       #Get the result and put it into out.nc file at node location
-#       out.nc <- nc_open(filename = standardizedfile,write = TRUE,readunlim = FALSE)
-#       ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
-#       nc_close(out.nc)
+      #Get the result and put it into out.nc file at node location
+      ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
       
-      print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
+      t.stop <- Sys.time()
+      cat(paste("Node",i,"\t actual",Sys.time(),"\t total",difftime(t.stop,tot.start,units="mins"),
+                "\t iteration", difftime(t.stop,t.start,units="mins"),
+                "\t since-last-write",difftime(t.stop,t.start.bis,units="mins"),"\n"))
+      t.start.bis <- t.stop
+#       print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
     } else if (tag == 3) {
       #a slave has closed down.
       closed_slaves <- closed_slaves + 1
@@ -524,5 +530,6 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       warning(res$error)
     } 
   }
+  nc_close(out.nc)
 }
 
