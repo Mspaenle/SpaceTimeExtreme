@@ -1,8 +1,7 @@
 require(fExtremes)
 require(evd)
-# require(ncdf4)
-require(pbdNCDF4)
-init()
+require(ncdf4)
+
 
 #------------------------------------------------------------------------------#
 # 0/ source properties and environment to run the model
@@ -97,6 +96,5 @@ Xs.3 <- lift(Xs.1 = Xs.1, var.x = env.var.x, var.y = env.var.y, t0.i = t0.i,
 
 
 # 7/ MPI handling
-finalize()
 mpi.close.Rslaves()
 mpi.quit()
