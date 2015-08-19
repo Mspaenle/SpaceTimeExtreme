@@ -403,8 +403,10 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
         tryCatch({
           x<-as.numeric(unlist(task))
           
+          t.read.start<-Sys.time()
           # Read time serie of a node indexed by x
           Xs <- Xs(file,var,index.location=c(x),grid=grid)
+          t.read.stop<-Sys.time()
           
           # Get estimated parameters of the GEV over u at this location
           nc.parameters <- nc_open(tmpfitinfo.file,readunlim = FALSE)
@@ -413,8 +415,14 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
           estim.sigma.s <- ncvar_get(nc = nc.parameters,"sigma_s",start = x, count = 1)
           nc_close(nc.parameters)
           
+          t.convert.start<-Sys.time()
           # Compute the standardized vector
           Xs.standardized <- standardizePareto(Xs = Xs$var, mu = estim.mu.s, sigma = estim.sigma.s, xi = estim.xi.s)
+          t.convert.stop<-Sys.time()
+          
+          cat(paste("WORKER:Node",x,"\t total", difftime(t.convert.stop,t.read.start,units="mins"),
+                    "(m)\t read",difftime(t.read.stop,t.read.start,units="secs"),
+                    "(s)\t convert",difftime(t.convert.stop,t.convert.start,units="secs"),"(s)\n"))
           
 #           #Get the result and put it into out.nc file at node location
 #           out.nc <- pbdNCDF4::nc_open_par(filename = standardizedfile, write = TRUE, readunlim = FALSE)
@@ -517,9 +525,9 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
       
       t.stop <- Sys.time()
-      cat(paste("Node",i,"\t actual",Sys.time(),"\t total",difftime(t.stop,tot.start,units="mins"),
-                "\t iteration", difftime(t.stop,t.start,units="mins"),
-                "\t since-last-write",difftime(t.stop,t.start.bis,units="mins"),"\n"))
+      cat(paste("Node",res$node,"\t",Sys.time(),"\t total",difftime(t.stop,tot.start,units="mins"),
+                "(m)\t iteration", difftime(t.stop,t.start,units="secs"),
+                "(s)\t since-last-write",difftime(t.stop,t.start.bis,units="secs"),"(s)\n"))
       t.start.bis <- t.stop
 #       print(paste("Standardization GEV-over-Exceedances - Node:",res$node))
     } else if (tag == 3) {
