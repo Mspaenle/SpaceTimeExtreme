@@ -1,4 +1,4 @@
-require(Rmpi)
+# require(Rmpi)
 require(pbdNCDF4)
 
 A <- "../../inputs/ww3/megagol2015a-gol-cleaned3.nc"
