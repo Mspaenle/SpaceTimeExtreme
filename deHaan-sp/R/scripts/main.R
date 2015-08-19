@@ -12,7 +12,7 @@ source("setEnv.R")
 # 1/ GET a time series X(s) indexed by s = node number
 source("extractTimeSerie.R")
 PREROUTINES <- FALSE
-if (preroutines) {
+if (PREROUTINES) {
   print("Extract Ref Location Timeserie")
   Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)
   Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)  
@@ -22,7 +22,7 @@ if (preroutines) {
 # 2/ GEV fit (above threshold) at reference station and store marginal results
 print("Reference (t0) location GEV Fit")
 source("marginFit.R")
-if (preroutines) {
+if (PREROUTINES) {
   paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
