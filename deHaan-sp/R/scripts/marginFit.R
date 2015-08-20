@@ -521,8 +521,13 @@ PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, g
       #message contains results. Deal with it.
       res<-message
       
+      standard.data<-res$xs
+      standard.data[is.na(standard.data)] <- missval
+      standard.data[is.infinite(standard.data)]  <- missval
+      standard.data[standard.data < -99999 | standard.data > 99999 ]  <- missval
+      
       #Get the result and put it into out.nc file at node location
-      ncvar_put(out.nc,paste0(var,"_standard"),res$xs,start=c(res$node,1),count=c(1,-1))
+      ncvar_put(out.nc,paste0(var,"_standard"),standard.data,start=c(res$node,1),count=c(1,-1))
       
       t.stop <- Sys.time()
       cat(paste("Node",res$node,"\t",Sys.time(),"\t total",difftime(t.stop,tot.start,units="mins"),
