@@ -283,7 +283,7 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
 # Find return level corresponding to the annual.return.period from estimated marginal parameters
 estimatingStormReturnLevel <- function (annual.return.period, obs.per.year, ratio.exceedances, mu.hat, sigma.hat, xi.hat) {
   p <- 1 / (annual.return.period * obs.per.year * ratio.exceedances)
-  zp <- mu.hat + sigma.hat * ( p^(xi.hat)- 1) / xi.hat
+  zp <- mu.hat + sigma.hat * ( p^(-xi.hat)- 1) / xi.hat
   return(zp)
 }
 
@@ -294,6 +294,6 @@ ratioExceedances <- function (file, var, location, quantile, grid) {
   
   nb.tot <- length(Xs[!is.na(Xs)])
   nb.excs <- length(Xs[Xs > threshold])
-  
+  cat("exces:",nb.excs,"tot:",nb.tot,"location:",location)
   return(nb.excs/nb.tot)
 }
