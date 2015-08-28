@@ -50,9 +50,6 @@ if (!env.restart.standardization) {
                       standardizedfile = env.standardized.file.x, grid = env.grid)
 }
 
-print("so far so good ?????!!!")
-mpi.close.Rslaves()
-mpi.quit()
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")
@@ -102,3 +99,5 @@ Xs.3 <- lift(Xs.1 = Xs.1, var.x = env.var.x, var.y = env.var.y, t0.i = t0.i,
 # 7/ MPI handling
 mpi.close.Rslaves()
 mpi.quit()
+
+

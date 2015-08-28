@@ -134,6 +134,14 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
   } else if (t0.mode == 2) {
     # Find t0i to have in each storm the largest within-maxima at ref.location equal to
     # the return level corresponding to env.returnperiod
+    xi <- paramsXsGEV$shape
+    sigma <- paramsXsGEV$scale
+    mu <- paramsXsGEV$loc
+    u <- paramsXsGEV$threshold
+    ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, quantile = quantile, grid = grid)
+    m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
+                                           ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
+    
     t0.i <- NULL
     t0 <- NULL
     for (i in 1:length(Xs.1)) {
@@ -157,7 +165,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       sigma <- as.numeric(unlist(infos["sigma"]))
       xi <- as.numeric(unlist(infos["xi"]))
       
-      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
+      ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, quantile = quantile, grid = grid)
+      m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
+                                             ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       
       print(paste0("var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
       
@@ -180,7 +190,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       sigma <- as.numeric(unlist(infos["sigma"]))
       xi <- as.numeric(unlist(infos["xi"]))
       
-      m.rlevel <- evd::qgev(1-1/m.returnperiod, loc = mu, scale = sigma, shape = xi)
+      ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, quantile = quantile, grid = grid)
+      m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
+                                             ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
