@@ -158,6 +158,8 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
+      cat("Storm",i,", location:",location.max.i, "\n")
+      
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
@@ -294,6 +296,6 @@ ratioExceedances <- function (file, var, location, quantile, grid) {
   
   nb.tot <- length(Xs[!is.na(Xs)])
   nb.excs <- length(Xs[Xs > threshold])
-  cat("exces:",nb.excs,"tot:",nb.tot,"location:",location)
+  
   return(nb.excs/nb.tot)
 }
