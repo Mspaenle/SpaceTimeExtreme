@@ -23,8 +23,8 @@ if (PREROUTINES) {
 print("Reference (t0) location GEV Fit")
 source("marginFit.R")
 if (PREROUTINES) {
-  paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
+  paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
 }
 #------------------------------------------------------------------------------#
