@@ -4,7 +4,12 @@
 #}
 
 # Read Properties #
-properties <- read.table("main.properties", header=FALSE, sep="=", row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE)
+if (exists("LOCAL") && LOCAL) {
+  PATHPROPERTIES <- "main-local.properties"
+} else {
+  PATHPROPERTIES <- "main.properties" 
+}
+properties <- read.table(PATHPROPERTIES, header=FALSE, sep="=", row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE)  
 properties <- setNames(properties[,1],row.names(properties))
 
 # Then set environment #

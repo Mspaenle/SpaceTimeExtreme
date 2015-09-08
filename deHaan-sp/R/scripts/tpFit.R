@@ -1,11 +1,12 @@
 print("Load environment")
+LOCAL<-TRUE # to use local properties has to be set to TRUE
 source("setEnv.R")
+source("extractTimeSerie.R")
 #------------------------------------------------------------------------------#
 # 1/ GET a time series X(s) indexed by s = node number
 # source("extractTimeSerie.R")
 # print("Extract Ref Location Timeserie")
-Xs.ref.y <- Xs(env.file, var.y, index.location=2000, grid=env.grid)
-
+Xs.ref.y <- Xs(env.file, env.var.y, index.location = 2100, grid=env.grid)
 
 # amin function to fit mu sigma xi
 amin<-function(theta,x) {
@@ -39,7 +40,6 @@ amin<-function(theta,x) {
     }
   }
 }
-
 
 aminnlmin2 <- function (start,d) {
   res <- nlminb(start = start, objective = amin, x=d,
