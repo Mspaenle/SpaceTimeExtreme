@@ -11,7 +11,7 @@ source("setEnv.R")
 #------------------------------------------------------------------------------#
 # 1/ GET a time series X(s) indexed by s = node number
 source("extractTimeSerie.R")
-PREROUTINES <- FALSE
+PREROUTINES <- TRUE
 if (PREROUTINES) {
   print("Extract Ref Location Timeserie")
   Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)

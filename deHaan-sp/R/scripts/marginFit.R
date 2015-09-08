@@ -149,10 +149,8 @@ marginGEVExceedanceFit2 <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
   
   if (!is.na(res.nlmin[1])) {
-    print("nlmin")
     return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
   } else {
-    print("optim")
     return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
   }
 }
@@ -318,19 +316,21 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
         loc1D <- c(loc1D,paramsXsGEV$loc)
       }  
     }
+    cat("DEBUG:reverse \n")
     asreverse1D <- 1/scale1D
     
     dimNode <- ncdim_def("node", "count", node)
     dimTime <- ncdim_def("time", units.time, time,unlim=TRUE)
-    
+    cat("DEBUG:ncdim def \n")
     varThres <- ncvar_def("u_s","",dimNode,missval=missval,prec="float",compression = 9)
     varShape <- ncvar_def("xi_s","",dimNode,missval=missval,prec="float",compression = 9)
     varScale <- ncvar_def("sigma_s","",dimNode,missval=missval,prec="float",compression = 9)
     varLoc_rep <- ncvar_def("mu_s_repeated",units.var,list(dimNode,dimTime),missval=missval,prec="float",compression = 9)
     varLoc <- ncvar_def("mu_s","",dimNode,missval=missval,prec="float",compression = 9)
     varInverseScale <- ncvar_def("inv_sigma_s_repeated","",list(dimNode,dimTime),missval=missval,prec="float",compression = 9)
-    
+    cat("DEBUG:ncvar def \n")
     bs.nc <- nc_create(bs.nc.path,list(varThres,varLoc_rep,varLoc,varShape,varScale,varInverseScale))
+    cat("DEBUG:nc_create \n")
     
     for (i in 1:length(time)) ncvar_put(bs.nc,varLoc_rep,loc1D,start=c(1,i),count=c(-1,1))
     ncvar_put(bs.nc,varLoc,loc1D,start=c(1),count=c(-1))
@@ -338,8 +338,10 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
     ncvar_put(bs.nc,varShape,shape1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varScale,scale1D,start=c(1),count=c(-1))
     for (i in 1:length(time)) ncvar_put(bs.nc,varInverseScale,asreverse1D,start=c(1,i),count=c(-1,1))
+    cat("DEBUG:fill variables \n")
   }
   # Close files
+  cat("DEBUG:close files \n")
   nc_close(in.nc)
   nc_close(bs.nc)
 }
@@ -377,8 +379,8 @@ standardizePareto <- function (Xs, mu, sigma, xi) {
 # (Parallel function) Standardize margins using Pareto transformation
 PstandardizeMargins <- function (file, var, tmpfitinfo.file, standardizedfile, grid=TRUE) {
   require(Rmpi)
-#   require(ncdf4)
-  require(pbdNCDF4)
+  require(ncdf4)
+#   require(pbdNCDF4)
   prec="single"
   missval=1.e30
   
