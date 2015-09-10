@@ -333,7 +333,6 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
 
   }
   # Close files
-  cat("DEBUG:close files \n")
   nc_close(in.nc)
   nc_close(bs.nc)
 }

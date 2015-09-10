@@ -213,9 +213,12 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
     # TODO
     stop("retrieveLocationMax has not been yet implemented for grid=TRUE option")
   } else {
-    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node-1;' ",file," ",tmp.char,sep=""))
-    system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
+#     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node;' ",file," ",tmp.char,sep=""))
     
+    # assume max value is unique
+    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",max,") foo=node;' ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
+  
     tmp.nc<-nc_open(tmp.char)
     node<-ncvar_get(tmp.nc,"foo")
     nc_close(tmp.nc)
