@@ -207,23 +207,28 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
 
 #return location of the given max 
 retrieveLocationMax <- function (file, var, max, grid =TRUE) {
+  require(ncdf4)
   tmp.char <- paste(workdirtmp,"/maxlocation.nc",sep="")
   location<-NULL
   if (grid) {
     # TODO
     stop("retrieveLocationMax has not been yet implemented for grid=TRUE option")
   } else {
-#     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node;' ",file," ",tmp.char,sep=""))
     # assume max value is unique
-    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,sep=""))
-    cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,"\n")
-    system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
-    cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char,"\n")
+#     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,sep=""))
+#     cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,"\n")
+#     system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
+#     cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char,"\n")
+#     
+#     tmp.nc<-nc_open(tmp.char)
+#     node<-ncvar_get(tmp.nc,"foo")
+#     nc_close(tmp.nc)
+#     location <- c(node)
     
-    tmp.nc<-nc_open(tmp.char)
-    node<-ncvar_get(tmp.nc,"node")
-    nc_close(tmp.nc)
-    location <- c(node)
+    ncfile <- nc_open(file,readunlim = FALSE)
+    values <- ncvar_get(ncfile,var)
+    index.1D <- which(mapply(function(x, y) {isTRUE(all.equal(x, y,tolerance=0.00001))}, values, max), arr.ind=TRUE)
+    location<-floor(index.1D,ncol(values))+1
   }    
   return(location)
 }
@@ -233,7 +238,7 @@ retrieveFitInfo <- function (file, location , grid = TRUE) {
   tmp.char <- paste(workdirtmp,"/retrievefitInfos.nc",sep="")
   infos<-list()
   if (!grid) {
-    system(command = paste(env,"ncks -O -d node,",location[1]," -v u_s,mu_s,sigma_s,xi_s ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncks -O -d node,",location[1]-1," -v u_s,mu_s,sigma_s,xi_s ",file," ",tmp.char,sep=""))
     tmp.nc<-nc_open(tmp.char)
     u<-ncvar_get(tmp.nc,"u_s")
     xi<-ncvar_get(tmp.nc,"xi_s")
