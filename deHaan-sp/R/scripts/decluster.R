@@ -53,7 +53,7 @@ decluster <- function (var,
   while (storms.tot > 0 & hasDataAbove) {
     t.max <- getMaxTimeValue(var.standard,file.standardized,index.ref.location,grid,hyperslabToString(hyperslab.remaining.peak),files.hyperslabs,init.time)
     hyperslab.storm <- data.frame(start = t.max-delta, end = t.max+delta)
-    print("storm:")
+    print("storm hyperslab:")
     str(hyperslab.storm)
     if (hasTimeOverflows(hyperslab.storms,hyperslab.storm)) warning(paste("Storm",j,"has a time overflow regarding selected storms."))
     hyperslab.storms <- rbind(hyperslab.storms,hyperslab.storm)

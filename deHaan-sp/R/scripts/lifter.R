@@ -216,12 +216,12 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
 #     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node;' ",file," ",tmp.char,sep=""))
     # assume max value is unique
     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,sep=""))
-    cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char)
+    cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,"\n")
     system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
-    cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char)
+    cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char,"\n")
     
     tmp.nc<-nc_open(tmp.char)
-    node<-ncvar_get(tmp.nc,"foo")
+    node<-ncvar_get(tmp.nc,"node")
     nc_close(tmp.nc)
     location <- c(node)
   }    
