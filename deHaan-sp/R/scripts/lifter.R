@@ -214,11 +214,12 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
     stop("retrieveLocationMax has not been yet implemented for grid=TRUE option")
   } else {
 #     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",var,".max()) foo=node;' ",file," ",tmp.char,sep=""))
-    
     # assume max value is unique
-    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",max,") foo=node;' ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,sep=""))
+    cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char)
     system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
-  
+    cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char)
+    
     tmp.nc<-nc_open(tmp.char)
     node<-ncvar_get(tmp.nc,"foo")
     nc_close(tmp.nc)
@@ -272,7 +273,7 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
       tmp.nc<-nc_open(tmp.char)
       new.max<-ncvar_get(tmp.nc,var)
       nc_close(tmp.nc)
-      print(paste("new.max :",new.max,"; max:",max))      
+      cat("new.max :",new.max,"; max:",max,"\n")      
       if (is.null(max) || new.max > max) {
         max <- new.max
       } 
