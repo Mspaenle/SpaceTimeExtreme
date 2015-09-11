@@ -228,7 +228,7 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
     ncfile <- nc_open(file,readunlim = FALSE)
     values <- ncvar_get(ncfile,var)
     index.1D <- which(mapply(function(x, y) {isTRUE(all.equal(x, y,tolerance=0.00001))}, values, max), arr.ind=TRUE)
-    location<-floor(index.1D,ncol(values))+1
+    location<-floor(index.1D/ncol(values))+1
   }    
   return(location)
 }
