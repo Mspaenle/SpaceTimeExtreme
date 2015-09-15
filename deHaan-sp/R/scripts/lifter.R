@@ -148,7 +148,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = ref.t0, grid = grid)
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       
-      print(paste0("var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
+      cat("DEBUG: var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i),"\n")
       t0.i <- c(t0.i,t0)
     }
   } else if (t0.mode == 3) {
@@ -160,7 +160,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
-      cat("Storm",i,", location:",location.max.i, "\n")
+      
       
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
@@ -173,7 +173,8 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                              ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       
-      print(paste0("var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
+      cat("DEBUG: Storm",i,", location:",location.max.i, "\n")
+      cat("DEBUG: var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i),"\n")
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
@@ -197,6 +198,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, quantile = quantile, grid = grid)
       m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                              ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
+      
+      cat("DEBUG: Storm",i,", location:",location.max.i, "\n")
+      cat("DEBUG: var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i),"\n")
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
