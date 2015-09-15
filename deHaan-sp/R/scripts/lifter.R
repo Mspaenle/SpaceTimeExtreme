@@ -33,7 +33,7 @@ lift <- function (Xs.1,var.x,var.y,t0.i,tmpfitinfo.file.x,tmpfitinfo.file.y,grid
    
    #  Zeta_i * T(X)
    Xs.2.i.x <- t0.i$x[i] * (( 1 + x.estim.xi.s * ((X-x.estim.mu.s)/x.estim.sigma.s) )^(x.inverse.estim.xi.s))
-   Xs.2.i.y <- t0.i$y[i] * (( 1 + x.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
+   Xs.2.i.y <- t0.i$y[i] * (( 1 + y.estim.xi.s * ((Y-y.estim.mu.s)/y.estim.sigma.s) )^(y.inverse.estim.xi.s))
    
    # T^(-1)(Y), Y = Zeta_i * T(X)
    Xs.3.i.x <- x.estim.sigma.s * ( (Xs.2.i.x)^x.estim.xi.s - 1 ) * x.inverse.estim.xi.s + x.estim.mu.s
@@ -147,6 +147,8 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = ref.t0, grid = grid)
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
+      
+      print(paste0("var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i)))
       t0.i <- c(t0.i,t0)
     }
   } else if (t0.mode == 3) {
@@ -215,16 +217,6 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
     stop("retrieveLocationMax has not been yet implemented for grid=TRUE option")
   } else {
     # assume max value is unique
-#     system(command = paste(env,"ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,sep=""))
-#     cat("DEBUG: ncap2 -4 -O -v -s 'foo[$time,$node]=-1; where(",var,"==",as.numeric(max),") foo=node;' ",file," ",tmp.char,"\n")
-#     system(command = paste(env,"ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char))
-#     cat("DEBUG: ncwa -4 -O -b -y max -v foo",tmp.char,tmp.char,"\n")
-#     
-#     tmp.nc<-nc_open(tmp.char)
-#     node<-ncvar_get(tmp.nc,"foo")
-#     nc_close(tmp.nc)
-#     location <- c(node)
-    
     ncfile <- nc_open(file,readunlim = FALSE)
     values <- ncvar_get(ncfile,var)
     index.1D <- which(mapply(function(x, y) {isTRUE(all.equal(x, y,tolerance=0.00001))}, values, max), arr.ind=TRUE)
