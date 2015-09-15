@@ -117,10 +117,13 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
   varid<-var 
   
   if (t0.mode == 1) {
-    xi <- paramsXsGEV$shape
-    sigma <- paramsXsGEV$scale
-    mu <- paramsXsGEV$loc
-    u <- paramsXsGEV$threshold
+    infos <- retrieveFitInfo(file = tmpfitinfo.file, location = ref.t0 , grid = grid)
+    
+    u <- as.numeric(unlist(infos["u"]))
+    mu <- as.numeric(unlist(infos["mu"]))
+    sigma <- as.numeric(unlist(infos["sigma"]))
+    xi <- as.numeric(unlist(infos["xi"]))
+    
     ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, quantile = quantile, grid = grid)
     m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                            ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
@@ -134,10 +137,13 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
   } else if (t0.mode == 2) {
     # Find t0i to have in each storm the largest within-maxima at ref.location equal to
     # the return level corresponding to env.returnperiod
-    xi <- paramsXsGEV$shape
-    sigma <- paramsXsGEV$scale
-    mu <- paramsXsGEV$loc
-    u <- paramsXsGEV$threshold
+    infos <- retrieveFitInfo(file = tmpfitinfo.file, location = ref.t0 , grid = grid)
+    
+    u <- as.numeric(unlist(infos["u"]))
+    mu <- as.numeric(unlist(infos["mu"]))
+    sigma <- as.numeric(unlist(infos["sigma"]))
+    xi <- as.numeric(unlist(infos["xi"]))
+    
     ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, quantile = quantile, grid = grid)
     m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                            ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
