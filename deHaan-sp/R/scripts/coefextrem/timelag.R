@@ -15,6 +15,7 @@ variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(1961,2012)
 
 # LOCAL RUN #
+LOCAL=FALSE
 # maxfile="~/Desktop/toto/max_Yt_Ut"
 # isMaxFile=TRUE
 # years=seq(1961,2012)
@@ -42,5 +43,7 @@ for (year in years) {
 plotThetaTimeLag(df.res,lagMax)
 
 # 7/ MPI handling
-# mpi.close.Rslaves()
-# mpi.quit()
+if (!LOCAL) {
+  mpi.close.Rslaves() 
+  mpi.quit()  
+}
