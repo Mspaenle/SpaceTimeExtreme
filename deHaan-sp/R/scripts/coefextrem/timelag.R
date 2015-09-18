@@ -15,9 +15,9 @@ variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(1961,2012)
 
 # LOCAL RUN #
-maxfile="~/Desktop/toto/max_Yt_Ut"
-isMaxFile=TRUE
-years=seq(1961,2012)
+# maxfile="~/Desktop/toto/max_Yt_Ut"
+# isMaxFile=TRUE
+# years=seq(1961,2012)
 # EN LOCAL RUN #
 
 # 1/ construct nc files of Y_t,u_t, t \in T
