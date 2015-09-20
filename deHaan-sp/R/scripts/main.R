@@ -43,13 +43,10 @@ if (!env.restart.marginsfit) {
 } 
 
 if (!env.restart.standardization) {
-#   print("Normalize")
-#   normalizeMargins(env.file, env.var.x, env.tmpfitinfo.file.x, normalizedfile = env.tmpnormalized.file)
   print("Standardize")
   PstandardizeMargins(file = env.file, var = env.var.x, tmpfitinfo.file = env.tmpfitinfo.file.x,
                       standardizedfile = env.standardized.file.x, grid = env.grid)
 }
-
 
 # Declustering. Will manage ref.location whether ref.fixed / ref.hyperslab is set or not
 print("Decluster")

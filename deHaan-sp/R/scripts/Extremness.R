@@ -22,18 +22,18 @@ env.ref.t0 <- 2919
 
 Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)  
 paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
-ref.threshold.x <- as.numeric(paramsXsGEV.X$threshold)
-ref.nbexceed.x <- as.numeric(paramsXsGEV.X$nbexceedcluster)
+# ref.threshold.x <- as.numeric(paramsXsGEV.X$threshold)
+# ref.nbexceed.x <- as.numeric(paramsXsGEV.X$nbexceedcluster)
 Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)  
 paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
-ref.threshold.y <- as.numeric(paramsXsGEV.Y$threshold)
-ref.nbexceed.y <- as.numeric(paramsXsGEV.Y$nbexceedcluster)
+# ref.threshold.y <- as.numeric(paramsXsGEV.Y$threshold)
+# ref.nbexceed.y <- as.numeric(paramsXsGEV.Y$nbexceedcluster)
 
 #------------------------------------------------------------------------------#
 ncstorm <- nc_open(filename = PATHSTORMNC, readunlim = FALSE)
 
 if (env.t0.mode == 1 || env.t0.mode == 2) {  
-  cat("X variable \n")
+  #---------- X ----------#
   infos <- retrieveFitInfo(file = PATHFITINFOX, location = env.ref.t0 , grid = env.grid)
   u <- as.numeric(unlist(infos["u"]))
   mu <- as.numeric(unlist(infos["mu"]))
@@ -43,8 +43,7 @@ if (env.t0.mode == 1 || env.t0.mode == 2) {
   
   max.i.init <- ncdfmax(file = PATHSTORMNC, var = env.var.x, index.ref.location = env.ref.t0, grid = env.grid)
   max.i.uplifted <- ncdfmax(file = PATHSTORMNC, var = paste0(env.var.x,"_uplifted"), index.ref.location = env.ref.t0, grid = env.grid)
-  #ratio <- ratioExceedances(file = file.origin, var = env.var.x, location = ref.t0, quantile = quantile, grid = grid)
-  ratio <- ref.nbexceed.x/455884
+  ratio <- nbexceed/455884
 
   m.rperiod.init <- initialStormReturnPeriod(zp = max.i.init, obs.per.year = env.obsperyear, 
                                         ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
@@ -53,7 +52,7 @@ if (env.t0.mode == 1 || env.t0.mode == 2) {
   
   cat("var|mu|sigma|xi|rinit|ryearperiodinit|rleveluplifted|rperioduplifted",env.var.x,"|",mu,"|",sigma,"|",xi,"|",max.i.init,"(m)","|",m.rperiod.init,"(ans)","|",max.i.uplifted,"(m)","|",m.rperiod.uplifted,"(ans)\n")
   
-  cat("Y variable \n")
+  #---------- Y ----------#
   infos <- retrieveFitInfo(file = PATHFITINFOY, location = env.ref.t0 , grid = env.grid)
   u <- as.numeric(unlist(infos["u"]))
   mu <- as.numeric(unlist(infos["mu"]))
@@ -63,8 +62,7 @@ if (env.t0.mode == 1 || env.t0.mode == 2) {
   
   max.i.init <- ncdfmax(file = PATHSTORMNC, var = env.var.y, index.ref.location = env.ref.t0, grid = env.grid)
   max.i.uplifted <- ncdfmax(file = PATHSTORMNC, var = paste0(env.var.y,"_uplifted"), index.ref.location = env.ref.t0, grid = env.grid)
-  #ratio <- ratioExceedances(file = file.origin, var = env.var.y, location = ref.t0, quantile = quantile, grid = grid)
-  ratio <- ref.nbexceed.y/455884
+  ratio <- nbexceed/455884
   
   m.rperiod.init <- initialStormReturnPeriod(zp = max.i.init, obs.per.year = env.obsperyear, 
                                         ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)

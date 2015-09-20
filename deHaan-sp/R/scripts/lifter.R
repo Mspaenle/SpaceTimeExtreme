@@ -200,8 +200,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       mu <- as.numeric(unlist(infos["mu"]))
       sigma <- as.numeric(unlist(infos["sigma"]))
       xi <- as.numeric(unlist(infos["xi"]))
+      nbexceed <- as.numeric(unlist(infos["nbexceed"]))
       
-      ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, quantile = quantile, grid = grid)
+      ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, nbexceed = nbexceed , grid = grid)
       m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                              ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       
@@ -246,8 +247,8 @@ retrieveFitInfo <- function (file, location , grid = TRUE) {
     xi<-ncvar_get(tmp.nc,"xi_s")
     sigma<-ncvar_get(tmp.nc,"sigma_s")
     mu<-ncvar_get(tmp.nc,"mu_s")
-#     nbexceed<-ncvar_get(tmp.nc,"nbexceed")
-    nbexceed<-0 # TODO
+    nbexceed<-ncvar_get(tmp.nc,"nbexceed")
+
     nc_close(tmp.nc)
     infos<-list("mu"=mu,"sigma"=sigma,"xi"=xi,"u"=u,"nbexceed"=nbexceed)
   } else {
@@ -310,14 +311,10 @@ initialStormReturnPeriod <- function (zp, obs.per.year, ratio.exceedances, mu.ha
   return(annual.return.period)
 }
 
-
 # Find ratio (nb.excs/nb.tot) between exceedances and number of observation of the time-series
-ratioExceedances <- function (file, var, location, quantile, grid) {
+ratioExceedances <- function (file, var, location, nbexceed, grid) {
   Xs <- Xs(file,var,location,grid)$var
-  threshold <- quantile(Xs, probs = quantile, na.rm = TRUE)
-  
   nb.tot <- length(Xs[!is.na(Xs)])
-  nb.excs <- length(Xs[Xs > threshold])
   
-  return(nb.excs/nb.tot)
+  return(nbexceed/nb.tot)
 }
