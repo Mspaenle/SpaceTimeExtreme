@@ -6,7 +6,7 @@ source("extractTimeSerie.R")
 # 1/ GET a time series X(s) indexed by s = node number
 # source("extractTimeSerie.R")
 # print("Extract Ref Location Timeserie")
-Xs.ref.y <- Xs(env.file, env.var.y, index.location = 2100, grid=env.grid)
+# Xs.ref.y <- Xs(env.file, env.var.y, index.location = 410, grid=env.grid)
 
 # amin function to fit mu sigma xi
 amin<-function(theta,x) {
@@ -76,16 +76,20 @@ marginGEVExceedanceFit2 <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   
   d <- exceed
   
-  m <- matrix(0,6,3)
-  m[,1] <- rep(1,6)
-  m[,2] <- rep(3,6)
-  m[,3] <- seq(-1,1,length=6)
+  m <- matrix(0,10,3)
+  m[,1] <- seq(8,12,10)
+  m[,2] <- seq(0,3,10)
+  m[,3] <- seq(-1,1,length=10)
   
   res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin2, d=d)
   res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim2, d=d)
   
   res.nlmin<-res.aminnlmin.mat[1:3,which.min(res.aminnlmin.mat[4,])]
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
+  
+  print("Debug:")
+  print(res.nlmin)
+  print(res.optim)
   
   if (!is.na(res.nlmin[1])) {
     print("nlmin")
@@ -107,23 +111,13 @@ paramsXsGEV.Y <- marginGEVExceedanceFit2(x = data, quantile = 1-env.p, cmax = en
 
 print(paramsXsGEV.Y)
 
-# # diagnostic fit
-source("diagnosticPlots.R")
-data.cluster<-clusters(data,u = paramsXsGEV.Y$threshold,r = 6,cmax = TRUE)
-data.nocluster<-data[data > paramsXsGEV.Y$threshold]
-par(mfrow=c(2,2))
-dens.gev(as.numeric(data.cluster),paramsXsGEV.Y)
-qq.gev(as.numeric(data.cluster),paramsXsGEV.Y)
-dens.gev(data.nocluster,paramsXsGEV.Y)
-qq.gev(data.nocluster,paramsXsGEV.Y)
-
-
-# # diagnostic fit
+## diagnostic fit
 # source("diagnosticPlots.R")
-# data.cluster<-clusters(Xs.ref.x$var,u = paramsXsGEV.X$threshold,r = 5,cmax = TRUE)
-# data<-Xs.ref.x$var[Xs.ref.x$var > paramsXsGEV.X$threshold]
+# data.cluster<-clusters(data,u = paramsXsGEV.Y$threshold,r = 6,cmax = TRUE)
+# data.nocluster<-data[data > paramsXsGEV.Y$threshold]
 # par(mfrow=c(2,2))
-# dens.gev(data.cluster,paramsXsGEV.X)
-# qq.gev(data.cluster,paramsXsGEV.X)
-# dens.gev(data,paramsXsGEV.X)
-# qq.gev(data,paramsXsGEV.X)
+# dens.gev(as.numeric(data.cluster),paramsXsGEV.Y)
+# qq.gev(as.numeric(data.cluster),paramsXsGEV.Y)
+# dens.gev(data.nocluster,paramsXsGEV.Y)
+# qq.gev(data.nocluster,paramsXsGEV.Y)
+

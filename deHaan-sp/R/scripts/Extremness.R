@@ -18,14 +18,14 @@ source("lifter.R")
 source("extractTimeSerie.R")
 source("marginFit.R")
 
-env.ref.t0 <- 2919
+env.ref.t0 <- 3284
 
 Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)  
 paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
 # ref.threshold.x <- as.numeric(paramsXsGEV.X$threshold)
 # ref.nbexceed.x <- as.numeric(paramsXsGEV.X$nbexceedcluster)
 Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)  
-paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
+paramsXsGEV.Y <- marginGEVExceedanceFit2(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
 # ref.threshold.y <- as.numeric(paramsXsGEV.Y$threshold)
 # ref.nbexceed.y <- as.numeric(paramsXsGEV.Y$nbexceedcluster)
 

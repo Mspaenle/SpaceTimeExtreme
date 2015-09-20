@@ -137,10 +137,10 @@ marginGEVExceedanceFit2 <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   
   d <- exceed
   
-  m <- matrix(0,6,3)
-  m[,1] <- rep(1,6)
-  m[,2] <- rep(3,6)
-  m[,3] <- seq(-1,1,length=6)
+  m <- matrix(0,10,3)
+  m[,1] <- seq(8,12,10)
+  m[,2] <- seq(0,3,10)
+  m[,3] <- seq(-1,1,length=10)
   
   res.aminnlmin.mat <- apply(X = m, MARGIN = 1, FUN = aminnlmin2, d=d)
   res.aminoptim.mat <- apply(X = m, MARGIN = 1, FUN = aminoptim2, d=d)
