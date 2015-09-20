@@ -4,8 +4,10 @@
 require(SpatialExtremes)
 require(ncdf4)
 infile <- "../../../inputs/ww3/megagol2015a-gol.nc"
-siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat"
-sites.xyz <- "../../../inputs/sitesInfo/sites.xyz.dat"
+siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat" #N-SvsW-E
+# siteInfoFile <- "../../../inputs/sitesInfo/sites-info-NEvsSE.dat"
+# sites.xyz <- "../../../inputs/sitesInfo/sites.xyz.dat"
+sites.xyz <- "../../../inputs/sitesInfo/CopyOfsites.xyz.dat"
 
 # read sites geometry Info file and return a dataframe
 getSiteGeomInfo <- function (file) {
@@ -25,8 +27,8 @@ extractData <- function (file,sites,year,var) {
   in.nc <- nc_open(filename = file, readunlim = FALSE) 
   
   y <- year-1960
-  start <- floor((y-1)*24*365.25)
-  end <- floor(y*24*365.25)
+  start <- floor((y-1)*24*365.25)+1
+  end <- floor(y*24*365.25)+1
   
   res <- data.frame("obs"=seq(1,end-start))
   nb<-0
@@ -62,15 +64,15 @@ theta.estimator.censored <- function (df.frech, df.siteGeomInfo, quantile, timeg
     s1 <- df.siteGeomInfo$S1[i]
     s2 <- df.siteGeomInfo$S2[i]
     
-    Y.s1 <- df.frech[ , (names(df.frech) %in% s1) ]
-    U.s1 <- as.numeric(quantile(Y.s1,quantile))
-    
-    Y.s2 <- df.frech[,(names(df.frech) %in% s2)]
-    U.s2 <- as.numeric(quantile(Y.s2,quantile))
+    Y.s1 <- df.frech[ , (names(df.frech) %in% s1)]
+    Y.s2 <- df.frech[ , (names(df.frech) %in% s2)]
     
     if (is.na(Y.s1[1]) || is.na(Y.s2[1]))  {
       next; # chunt comput. when one of two is NA
     } else {
+      U.s1 <- as.numeric(quantile(Y.s1,quantile))
+      U.s2 <- as.numeric(quantile(Y.s2,quantile))
+      
       s<-0
       m<-0
       indexMax<-(length(Y.s1))
@@ -87,37 +89,62 @@ theta.estimator.censored <- function (df.frech, df.siteGeomInfo, quantile, timeg
       theta <- m / s
       df <- rbind(df,data.frame("distance"=dist.h,"orientation"=orientation,"theta"=theta,"year"=year))
     }
-#     print(paste0(i,"/",nrow(df.siteGeomInfo)))
   }
   return (df)
 }
 
 # Function to plot theta distancelag
-plotThetaDistanceLag <- function (df.res) {
+plotThetaDistanceLag <- function (df.res,omnidir) {
   require(ggplot2)
   require(reshape2)
   require(Hmisc)
+  require(msir)
   
   p <- ggplot(data = df.res, mapping = aes(x=distance/1000,y=theta)) +
     theme(panel.background = element_rect(fill="white")) +
     theme_bw() +
     theme(text = element_text(size=20)) +
-    theme(legend.position = c(0.85, 0.4)) + # c(0,0) bottom left, c(1,1) top-right.
+    theme(legend.position = c(0.85, 0.3)) + # c(0,0) bottom left, c(1,1) top-right.
     theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
-    ggtitle(paste0("Extremal Coefficient distance - 500 bins - 2000:2012")) +
+#     ggtitle(paste0("Extremal Coefficient distance - 500 bins")) +
     ylab(expression("Extremal Coefficient":hat(theta)(h))) + 
     xlab("Distance h (km)") +
-    geom_point(alpha=0.7,shape=4) +
-    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
-#     facet_wrap(~ orientation,ncol=2) +
-  #     geom_smooth(aes(group=orientation),
-  #                 method="lm",formula = y ~ ns(x,3),
-  #                 se = FALSE,size=1.5,color="black") 
-  #     geom_smooth(aes(group=1, colour = "black"),
-  #                 method="lm",formula = y ~ ns(x,4),
-  #                 se = FALSE,size=1.7)
-      geom_smooth(aes(group=1),color = "black",
-                  method="loess",size=1.5)
+    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125))
+  
+  if (omnidir) {
+    fit <- loess.sd(y = df.res$theta,x=df.res$distance/1000, nsigma = 1.96)
+    df.prediction<-data.frame(distance=fit$x)
+    df.prediction$fit<-fit$y
+    df.prediction$upper <- fit$upper
+    df.prediction$lower <- fit$lower
+    df.prediction$theta <- fit$y
+    
+    p <- p + geom_point(alpha=0.7,shape=3) +
+      geom_line(data=df.prediction, mapping=aes(x=distance,y=fit),alpha=1,size=1,colour="black") +
+      geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill="lightgrey", alpha=.3) +
+      geom_line(data=df.prediction,aes(x=distance,y = upper), colour = 'grey') +
+      geom_line(data=df.prediction,aes(x=distance,y = lower), colour = 'grey')
+    
+  } else {
+    colours <- c("pink","lightblue")
+    k<-1
+    for (dir in unique(df.res$orientation)) {
+      df.res.dir <- df.res[df.res$orientation %in% dir, ]
+      fit <- loess.sd(y = df.res.dir$theta,x=df.res.dir$distance/1000, nsigma = 1.96)
+      df.prediction<-data.frame(distance=fit$x)
+      df.prediction$fit<-fit$y
+      df.prediction$upper <- fit$upper
+      df.prediction$lower <- fit$lower
+      df.prediction$theta <- fit$y
+      
+      p <- p + geom_point(alpha=0.7,shape=3,aes(colour=orientation)) +
+        geom_line(data=df.prediction, mapping=aes(x=distance,y=fit),alpha=1,size=1,colour=colours[k]) +
+        geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill=colours[k], alpha=.3) +
+        geom_line(data=df.prediction,aes(x=distance,y = upper), colour = colours[k]) +
+        geom_line(data=df.prediction,aes(x=distance,y = lower), colour = colours[k])
+      k<-k+1
+    }
+  }
   
   print(p)
 }
@@ -128,46 +155,46 @@ plotThetaDistanceLag <- function (df.res) {
 #################################################
 
 # Collect data
-years <- seq(2000,2012) # Graphe actuel
-
+# years <- seq(2011,2012) 
 years <- seq(1961,2012) 
 # years <- c(2012)
 res.total <- NULL
 count<-0
 j<-0
-for (year in years) {
-  print(paste0("Achievement: ",j,"/",length(years),"  ",Sys.time()))
-  count<-count+1
-  isCollected <- FALSE
-  if (!isCollected) {
-    data.siteGeomInfo <- getSiteGeomInfo(file = siteInfoFile)
-    sites <- getSitesXYZ(file = sites.xyz)$V1
-    data.var <- extractData(file = infile, sites = sites, year = year, var = "hs")
-    drop<-c("obs")
-    data.var <- data.var[,!(names(data.var) %in% drop )]
-  }
-  
-  isTransformed <- FALSE
-  if (!isTransformed) {
-    data.var.frech <- toFrech(data.var,sites)  
-  }
-  
-  isThetaEstimated <- FALSE
-  if (!isThetaEstimated) {
-    quantile<-0.95
-    timegap<-1
-    res <- theta.estimator.censored(data.var.frech,data.siteGeomInfo,quantile,timegap,year)
-#     levels(res$orientation)<-c("N-S","NE-SW","NW-SE","W-E")
-#     levels(res$orientation)<-c("NE-SW","SE-NW")
-    levels(res$orientation)<-c("N-S","W-E")
-  }
-  res.total <- rbind(res.total,res)
-  j<-j+1
+LOADDATA=FALSE
+if (LOADDATA) {
+  for (year in years) {
+    print(paste0("Achievement: ",j,"/",length(years),"  ",Sys.time()))
+    count<-count+1
+    isCollected <- FALSE
+    if (!isCollected) {
+      data.siteGeomInfo <- getSiteGeomInfo(file = siteInfoFile)
+      sites <- getSitesXYZ(file = sites.xyz)$V1
+      data.var <- extractData(file = infile, sites = sites, year = year, var = "hs")
+      drop<-c("obs")
+      data.var <- data.var[,!(names(data.var) %in% drop )]
+    }
+    
+    isTransformed <- FALSE
+    if (!isTransformed) {
+      data.var.frech <- toFrech(data.var,sites)  
+    }
+    
+    isThetaEstimated <- FALSE
+    if (!isThetaEstimated) {
+      quantile<-0.95
+      timegap<-1
+      res <- theta.estimator.censored(data.var.frech,data.siteGeomInfo,quantile,timegap,year)
+      #     levels(res$orientation)<-c("N-S","NE-SW","NW-SE","W-E")
+      #     levels(res$orientation)<-c("NE-SW","SE-NW")
+      levels(res$orientation)<-c("N-S","W-E")
+    }
+    res.total <- rbind(res.total,res)
+    j<-j+1
+  }  
+  res<-res.total
+  rm(res.total)
 }
-
-
-res<-res.total
-rm(res.total)
 
 
 # plotThetaDistanceLag(res[1<res$theta & res$theta < 2.04 ,])
@@ -208,4 +235,5 @@ if (omniDir) {
   } 
 }
 # res.bin<-data.frame("theta"=thetaBinned,"distance"=dist.bins)
-plotThetaDistanceLag(res.bin[1<res.bin$theta & res.bin$theta < 2.04 & !is.na(res.bin$theta) ,])
+# plotThetaDistanceLag(res.bin[1<res.bin$theta & res.bin$theta < 2.04 & !is.na(res.bin$theta) ,])
+plotThetaDistanceLag(res.bin[ !is.na(res.bin$theta) ,],omniDir)

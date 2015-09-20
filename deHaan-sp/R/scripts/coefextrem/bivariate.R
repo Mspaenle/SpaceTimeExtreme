@@ -127,10 +127,11 @@ plotThetaBivariate <- function (df) {
 
 variables<-c("hs","tp")
 year<-2012
-years <- seq(1961,2012)
+# years <- seq(1961,2012)
+years <- seq(2011,2012)
 n<-0
 
-isDataProcessed<-TRUE
+isDataProcessed<-FALSE
 if (!isDataProcessed) {
   res.total<-NULL
   for (year in years) {

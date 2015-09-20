@@ -15,10 +15,11 @@ variables=c("hs","tp") #fp will becomes tp=1/fp, peak wave period
 years=seq(1961,2012)
 
 # LOCAL RUN #
-LOCAL=FALSE
-# maxfile="~/Desktop/toto/max_Yt_Ut"
-# isMaxFile=TRUE
-# years=seq(1961,2012)
+LOCAL=TRUE
+maxfile="/Users/rchailan/Desktop/max-Yt-Ut/0.95/max_Yt_Ut"
+isMaxFile=TRUE
+years=seq(1961,2012)
+# years=seq(2001,2012)
 # EN LOCAL RUN #
 
 # 1/ construct nc files of Y_t,u_t, t \in T
@@ -34,6 +35,7 @@ for (year in years) {
 # 2/ for each lag k \in K, compute \hat{\theta} and add the result to a list
 df.res<-NULL
 for (year in years) {
+  cat(year,"\n")
   outfile<-paste0(maxfile,year,extension)
   data <- theta.estimator(outfile,"hs",lagMax,timegap,year)
   df.res<-rbind(df.res,data)

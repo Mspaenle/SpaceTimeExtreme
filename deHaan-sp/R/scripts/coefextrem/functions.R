@@ -143,9 +143,9 @@ marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
   
   if (!is.na(res.nlmin[1])) {
-    return (data.frame("mu"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+    return (data.frame("mu"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold),"nbexceedcluster"=length(exceed))
   } else {
-    return (data.frame("mu"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+    return (data.frame("mu"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold),"nbexceedcluster"=length(exceed))
   }
 }
 
@@ -498,6 +498,7 @@ plotThetaTimeLag <- function (df.res,lagMax) {
   require(ggplot2)
   require(reshape2)
   require(Hmisc)
+  require(msir)
 
   p <- ggplot(data = df.res, mapping = aes(x=lag,y=theta)) +
     theme(panel.background = element_rect(fill="white")) +
@@ -505,14 +506,26 @@ plotThetaTimeLag <- function (df.res,lagMax) {
     theme(text = element_text(size=20)) +
     theme(legend.position = c(0.85, 0.4)) + # c(0,0) bottom left, c(1,1) top-right.
     theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
-    ggtitle("Extremal Coefficient timela") +
+#     ggtitle("Extremal Coefficient timela") +
     ylab(expression("Extremal Coefficient":hat(theta)(k))) + 
     xlab("Time lag k (hours)") +
     scale_color_discrete(name="Year") +
     scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
-    geom_point(alpha=0.15,shape=3) +
-    stat_summary(fun.data="mean_cl_boot",geom="smooth",aes(group=1),
-                 alpha=0.25,size=1,colour="black")
+    geom_point(alpha=0.15,shape=3) 
+#     geom_smooth(method="auto",se=TRUE,level=0.95)
+
+    fit <- loess.sd(y = df.res$theta,x=df.res$lag, nsigma = 1.96)
+    df.prediction<-data.frame(lag=fit$x)
+    df.prediction$fit<-fit$y
+    df.prediction$upper <- fit$upper
+    df.prediction$lower <- fit$lower
+    df.prediction$theta <- fit$y
+  
+    p <- p + geom_line(data=df.prediction, mapping=aes(x=lag,y=fit),alpha=1,size=1,colour="black") +
+    geom_ribbon(data=df.prediction, aes(x=lag, ymax=upper, ymin=lower), fill="lightgrey", alpha=.3) +
+    geom_line(data=df.prediction,aes(x=lag,y = upper), colour = 'grey') +
+    geom_line(data=df.prediction,aes(x=lag,y = lower), colour = 'grey')
+
 
   print(p)
 }
