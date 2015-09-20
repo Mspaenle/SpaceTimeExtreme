@@ -94,9 +94,9 @@ marginGEVExceedanceFit <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
   
   if (!is.na(res.nlmin[1])) {
-    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold,"nbexceedcluster"=length(exceed)))
   } else {
-    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold,"nbexceedcluster"=length(exceed)))
   }
 }
 
@@ -149,9 +149,9 @@ marginGEVExceedanceFit2 <- function (x,quantile=0.95,cmax=TRUE,r=6) {
   res.optim<-res.aminoptim.mat[1:3,which.min(res.aminoptim.mat[4,])]
   
   if (!is.na(res.nlmin[1])) {
-    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold))
+    return (data.frame("loc"=res.nlmin[1],"scale"=res.nlmin[2],"shape"=res.nlmin[3],"threshold"=threshold,"nbexceedcluster"=length(exceed)))
   } else {
-    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold))
+    return (data.frame("loc"=res.optim[1],"scale"=res.optim[2],"shape"=res.optim[3],"threshold"=threshold,"nbexceedcluster"=length(exceed)))
   }
 }
 
@@ -190,6 +190,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
       scale1D <- rep(-9999,length(node))
       shape1D <- rep(-9999,length(node))
       thres1D <- rep(-9999,length(node))
+      nbexceedcluster1D <- rep(-9999,length(node))
       
       require(Rmpi)
       ## // function
@@ -224,7 +225,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
                 paramsXsGEV <- marginGEVExceedanceFit(x = as.numeric(stats::na.omit(as.matrix(Xs.ref$var))), quantile = 1-proba, cmax = cmax, r = r) 
               }
               result<-list(node=x,shape1D=paramsXsGEV$shape,scale1D=paramsXsGEV$scale,
-                           thres1D=paramsXsGEV$threshold,loc1D=paramsXsGEV$loc)
+                           thres1D=paramsXsGEV$threshold,loc1D=paramsXsGEV$loc,nbexceedcluster=paramsXsGEV$nbexceedcluster)
             }, error = function(e) {print(paste("error:",e)); bug<-TRUE})
             if (bug) {
               result<-list(node=x)
@@ -294,7 +295,8 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
           scale1D[res$node] <- res$scale1D
           loc1D[res$node] <- res$loc1D
           thres1D[res$node] <- res$thres1D
-          print(paste("Margin GEV-over-Exceedances - Node:",res$node,"    THRES",res$thres1D,"MU",res$loc1D,"SIGMA",res$scale1D,"XI",res$shape1D))
+          nbexceedcluster1D[res$node] <- res$nbexceedcluster
+          print(paste("Margin GEV-over-Exceedances - Node:",res$node,"    THRES",res$thres1D,"MU",res$loc1D,"SIGMA",res$scale1D,"XI",res$shape1D,"NBEXCEED",res$nbexceedcluster))
         } else if (tag == 4) {
           res<-message
           warning(paste0("error during fitting at Node: ",res$node))
@@ -314,6 +316,7 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
         scale1D <- c(scale1D,paramsXsGEV$scale)
         thres1D <- c(scale1D,paramsXsGEV$threshold)
         loc1D <- c(loc1D,paramsXsGEV$loc)
+        nbexceedcluster1D <- c(nbexceedcluster1D,paramsXsGEV$nbexceedcluster)
       }  
     }
     asreverse1D <- 1/scale1D
@@ -324,12 +327,14 @@ createMarginScaleParameters <- function (file,var,proba,r,cmax,tmpfitinfo.file,g
     varShape <- ncvar_def("xi_s","",dimNode,missval=missval,prec="float",compression = 9)
     varScale <- ncvar_def("sigma_s","",dimNode,missval=missval,prec="float",compression = 9)
     varLoc <- ncvar_def("mu_s","",dimNode,missval=missval,prec="float",compression = 9)
+    varExceed <- ncvar_def("nbexceed","",dimNode,missval=missval,prec="float",compression = 9)
 
-    bs.nc <- nc_create(bs.nc.path,list(varThres,varLoc,varShape,varScale))
+    bs.nc <- nc_create(bs.nc.path,list(varThres,varLoc,varShape,varScale,varExceed))
     ncvar_put(bs.nc,varLoc,loc1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varThres,thres1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varShape,shape1D,start=c(1),count=c(-1))
     ncvar_put(bs.nc,varScale,scale1D,start=c(1),count=c(-1))
+    ncvar_put(bs.nc,varExceed,nbexceedcluster1D,start=c(1),count=c(-1))
 
   }
   # Close files

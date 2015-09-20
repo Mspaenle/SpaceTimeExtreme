@@ -246,8 +246,10 @@ retrieveFitInfo <- function (file, location , grid = TRUE) {
     xi<-ncvar_get(tmp.nc,"xi_s")
     sigma<-ncvar_get(tmp.nc,"sigma_s")
     mu<-ncvar_get(tmp.nc,"mu_s")
+#     nbexceed<-ncvar_get(tmp.nc,"nbexceed")
+    nbexceed<-0 # TODO
     nc_close(tmp.nc)
-    infos<-list("mu"=mu,"sigma"=sigma,"xi"=xi,"u"=u)
+    infos<-list("mu"=mu,"sigma"=sigma,"xi"=xi,"u"=u,"nbexceed"=nbexceed)
   } else {
     stop("retrieveA has not been yet implemented for grid=TRUE option")
   }
@@ -299,6 +301,15 @@ estimatingStormReturnLevel <- function (annual.return.period, obs.per.year, rati
   zp <- mu.hat + sigma.hat * ( p^(-xi.hat)- 1) / xi.hat
   return(zp)
 }
+
+
+# Find return period of the corresponding return level and from estimated marginal parameters
+initialStormReturnPeriod <- function (zp, obs.per.year, ratio.exceedances, mu.hat, sigma.hat, xi.hat) {
+  tmp <- obs.per.year * ratio.exceedances * (1 + xi.hat * (zp-mu.hat)/sigma.hat )^(-1/xi.hat)
+  annual.return.period <- 1/tmp
+  return(annual.return.period)
+}
+
 
 # Find ratio (nb.excs/nb.tot) between exceedances and number of observation of the time-series
 ratioExceedances <- function (file, var, location, quantile, grid) {
