@@ -125,7 +125,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
     xi <- as.numeric(unlist(infos["xi"]))
     nbexceed <- as.numeric(unlist(infos["nbexceed"]))
     
-    ratio <- ratioExceedances(file = file.origin, var = var, location = location, nbexceed = nbexceed , grid = grid)
+    ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, nbexceed = nbexceed , grid = grid)
     m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                            ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
     
@@ -146,7 +146,7 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
     xi <- as.numeric(unlist(infos["xi"]))
     nbexceed <- as.numeric(unlist(infos["nbexceed"]))
     
-    ratio <- ratioExceedances(file = file.origin, var = var, location = location, nbexceed = nbexceed , grid = grid)
+    ratio <- ratioExceedances(file = file.origin, var = var, location = ref.t0, nbexceed = nbexceed , grid = grid)
     m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                            ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
     
