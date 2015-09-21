@@ -241,7 +241,7 @@ retrieveFitInfo <- function (file, location , grid = TRUE) {
   tmp.char <- paste(workdirtmp,"/retrievefitInfos.nc",sep="")
   infos<-list()
   if (!grid) {
-    system(command = paste(env,"ncks -O -d node,",location[1]-1," -v u_s,mu_s,sigma_s,xi_s ",file," ",tmp.char,sep=""))
+    system(command = paste(env,"ncks -O -d node,",location[1]-1," -v u_s,mu_s,sigma_s,xi_s,nbexceed ",file," ",tmp.char,sep=""))
     tmp.nc<-nc_open(tmp.char)
     u<-ncvar_get(tmp.nc,"u_s")
     xi<-ncvar_get(tmp.nc,"xi_s")
