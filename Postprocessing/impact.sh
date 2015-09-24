@@ -17,6 +17,7 @@ envelopelon="-R3/5"
 envelopelat="-R42/44"
 envelopelambert93="-R700000.0000/865629.1328/6128081.8176/6279561.7280"
 outfile="outputs/impact"
+siteref="inputs/ww3/siteref.xy"
 ################
 
 ################
@@ -36,6 +37,7 @@ gmt gmtset MAP_LABEL_OFFSET 0.2c
 gmt gmtset FORMAT_FLOAT_OUT %8.8f
 gmt gmtset PROJ_ELLIPSOID Clarke-1880-IGN
 gmt gmtset PROJ_LENGTH_UNIT c
+gmt gmtset MAP_ANNOT_OBLIQUE 32
 ###############
 
 ########################
@@ -53,8 +55,6 @@ paramJ2=-Jl${lonREF}/${latREF}/${latsec1}/${latsec2}/1:850000
 offset=-C${offsetX}/${offsetY}
 projX=-Jx1:850000
 ########################
-
-
 
 #####################################
 ## Create Baseline from BATHY file ##
@@ -325,8 +325,8 @@ if [ "${HASGEOMETRY}" = false ]; then
 	# awk  ' {print $5,$6}' ${work}/coast-intersections-points-tmp > ${work}/testpoints
 
 	sort -g -k1 ${work}/coast-intersections-points-tmp > ${work}/coast-intersections-points
-	
 fi
+awk '{print $2,$3}' ${work}/coast-intersections-points > $work/coast-intersections-points.xy
 
 #########################
 ## Extract storms data ##
@@ -334,8 +334,10 @@ fi
 if [ "${HASEXTRACTED}" = false ]; then
 	# Interpolation of vars to the (xi,yi) points, i.e. the baselines points
 	storms=$(ls ${STORMSDIR}/storm*.nc)
+	
+	storms=${STORM} ## chunt the previous line
+
 	vars=${VARIABLES}
-	# vars="hs_uplifted "
 	flux=${storms[0]}
 
 	## PROCESS GRID POINTS FROM WW3-4.18 ounf outputs ##
@@ -374,12 +376,14 @@ if [ "${HASEXTRACTED}" = false ]; then
 				ncks -v $var -d time,$t $flux |awk '! /count/ {print $0}'| grep "time\[$t\]" |grep "node" |awk 'BEGIN {FS="="} {print $4} ' |sed 's/ m//g' |sed 's/_/0.0/g' > $work/$var-$t
 				# log $? "extract $var-$t in 1 column"
 
-				paste $work/nodes-lamb93.xy $work/$var-$t > $work/$var-$t.xyz
-				# log $? "prepare xyz file"
+				paste $work/nodes-lamb93.xy $work/$var-$t > $work/$var-$t-bis.xyz
+				awk '{print $1,$2,$3}' $work/$var-$t-bis.xyz > $work/$var-$t.xyz
+				log $? "prepare xyz file"
 
-				gmt xyz2grd $work/$var-$t.xyz  ${envelopelambert93} -I2000/2000 -G$work/$var-$t.grd
-				# gmt nearneighbor $work/$var-$t.xyz $envelope -S${NEARNEIGHBORS} -N${NEARNEIGHBORN} -I${NEARNEIGHBORINC}/${NEARNEIGHBORINC} -G$work/$var-$t.grd
-				# log $? "xyz2grd"
+				# gmt xyz2grd $work/$var-$t.xyz  ${envelopelambert93} -I1000/1000 -G$work/$var-$t.grd
+				gmt nearneighbor $work/$var-$t.xyz ${envelopelambert93}  -S${NEARNEIGHBORS} -N${NEARNEIGHBORN} -I${NEARNEIGHBORINC}/${NEARNEIGHBORINC} -G$work/$var-$t.grd
+				# gmt nearneighbor $work/$var-$t.xyz ${envelopelambert93}  -S10000 -N4/2 -I1000/1000 -G$work/$var-$t.grd
+				log $? "xyz2grd"
 
 				gmt grdtrack ${work}/baseline_spline -G$work/$var-$t.grd -sa |awk '{print $3}' > ${work}/${var}-tmp
 				log $? "grdtrack var:$var t:$t"
@@ -391,10 +395,95 @@ if [ "${HASEXTRACTED}" = false ]; then
 	done
 fi
 
+
+
+#############################
+## Locations of extraction ##
+#############################
+#SiteRef
+gmt  mapproject ${siteref} $paramJ1 ${envelope} -F -S $offset > ${work}/siteref.xyz
+log $? "mapproject siteref"
+
+sed -n '9p' ${work}/coast-intersections-points |awk '{print $2,$3,$1}' > ${work}/site1.xyz
+sed -n '40p' ${work}/coast-intersections-points |awk '{print $2,$3,$1}' > ${work}/site2.xyz
+sed -n '80p' ${work}/coast-intersections-points |awk '{print $2,$3,$1}' > ${work}/site3.xyz
+sed -n '110p' ${work}/coast-intersections-points |awk '{print $2,$3,$1}' > ${work}/site4.xyz
+sed -n '140p' ${work}/coast-intersections-points |awk '{print $2,$3,$1}' > ${work}/site5.xyz
+log $? "select site i"
+
+sed -n '8p' ${work}/baseline_spline  > ${work}/site6.xyz
+sed -n '39p' ${work}/baseline_spline  > ${work}/site7.xyz
+sed -n '79p' ${work}/baseline_spline  > ${work}/site8.xyz
+sed -n '109p' ${work}/baseline_spline  > ${work}/site9.xyz
+sed -n '139p' ${work}/baseline_spline  > ${work}/site10.xyz
+
 #################
 ## Wave impact ##
 #################
+if [ "${DOIMPACT}" = true ]; then
+	storms=${STORM}
+	vars=${VARIABLES}
 
+	# GET the values of delta to find w_i (see figures in chailan et al. (2015))
+	echo "delta_i" > ${work}/delta_i
+	awk '{print $4}' ${work}/coast-intersections-points-tmp >> ${work}/delta_i
+
+	for storm in ${storms} ; do #for each storm
+		nbstorm=$(echo $storm|grep -o '[0-9]\+')
+		log "notice" "work on wave impact for storm ${nbstorm}"
+
+		# create file containing profiles number
+		awk '{print $1}' ${work}/coast-intersections-points > ${output}/impacts-storm-${nbstorm}
+
+		# find all time steps
+		nbtimesteps=$(ncks -M ${storm} |grep "name = time" | awk -F= '{print $3}' |bc -l)
+		nbtimesteps=1
+
+		for t in $(seq 2 $((nbtimesteps+1))); do #for all time step in the given storm
+
+			# create temp file containing profiles number
+			awk '{print $1}' ${work}/coast-intersections-points > ${work}/wave.tmp
+
+			for var in ${vars} ; do #for each var extract dir hs tp
+				outfile2=${output}/storm-${nbstorm}-$var
+				cut -f ${t} ${outfile2} > ${work}/${var}
+				echo "${var}" > ${work}/${var}.2
+				cat ${work}/${var}  >> ${work}/${var}.2
+				sed '$d' ${work}/${var}.2 > ${work}/${var}
+				rm ${work}/${var}.2 
+				paste ${work}/wave.tmp ${work}/${var} > ${work}/wave.tmp2
+				mv ${work}/wave.tmp2 ${work}/wave.tmp
+			done
+
+			#store info at time t
+			paste ${work}/wave.tmp ${work}/delta_i > ${work}/impact_infos
+			
+			#computation of impact at time t along all profiles
+			awk -v outf=${work}/impact-${t} '
+     		BEGIN { 
+     		 numpi  = 3.1415926535897932384626433832795;
+     		 rho = 1000;
+     		 g = 9.81;
+             fileout = outf;
+	         print("Q_it Phi_it") > fileout ;
+           	}
+           	{ 
+           	 profile=$1 ; h=$2 ; dirdeg=$3; t=$4; delta=$5;
+             R=(2*numpi/360)*dirdeg;
+             psi=2*numpi-R;
+             wit=psi-delta;
+             q=1/8*rho*g*h*h*t;
+             phi=q*sin(wit)*cos(wit);
+             
+             printf("%f %f\n",q,phi) >> fileout ;
+            } 
+      		' ${work}/impact_infos
+			log "notice" "Number of profiles created : $nbrprofiles"
+		done
+		#4 on joint tous les fichiers crees pour les pas de temps dans un fichier impact avec le nom de la tempetes
+	done
+fi
+#5 on extrait que les 5 points qui nous interessent
 
 
 ################
@@ -407,43 +496,50 @@ if [ "${GMT}" = true ]; then
 	if [ "${MAPPROJECT}" = true ]; then
 		palette="work/shallow-water.cpt"
 		gmt makecpt -Z-5000/0/50 -Csealand -G-5000/0 -M > $palette		
-		# gmt grd2cpt ${work}/bathy-lamb93.grd -Z > $palette
 		log $? "grd2cpt"
 
-		# gmt	grdimage ${work}/bathy-lamb93.grd $projX -C$palette -P -K > ${outfile}.ps
-		gmt	grdimage ${bathy} ${paramJ2} ${envelope} -C$palette -P -K > ${outfile}.ps
-		log $? "grdimage"
-		gmt pscoast ${paramJ2} ${envelope} -Df -G#d9bb7a -C#d9bb7a -N1/0.2p,#0000FF,solid  -P -K  -O >> ${outfile}.ps
+		# gmt	grdimage ${bathy} ${paramJ2} ${envelope} -C$palette -P -K > ${outfile}.ps
+		# log $? "grdimage"
+		# gmt pscoast ${paramJ2} ${envelope} -Df -G200 -C200 -N1/0.2p,#000000,solid   -P -K  -O >> ${outfile}.ps
+		gmt pscoast ${paramJ2} ${envelope} -Df -G200 -C200 -N1/0.2p,#000000,solid   -P -K  > ${outfile}.ps
 		log $? "pscoast"
-		gmt	psbasemap ${paramJ2} ${envelope} $echelle $rose -Bf0.5a1:longitude:/f0.25a0.5:latitude:/:."bla":WeSn -P -O -K >> ${outfile}.ps
+		# gmt	psbasemap ${paramJ2} ${envelope} $echelle $rose -Bf0.5a1:longitude:/f0.25a0.5:latitude:/:."bla":WeSn -P -O -K >> ${outfile}.ps
+		gmt	psbasemap ${paramJ2} ${envelope} $echelle $rose -Bf0.1a0.2:longitude:/f0.05a0.1:latitude:/:."bla":WeSn -P -O -K >> ${outfile}.ps
 		log $? "psbasemap"
 		# gmt	grdcontour ${work}/bathy-lamb93.grd $projX ${envelopelambert93} -S -A60+gwhite+f4 -Wcthinnest,black,solid -Wathinner,black,solid -P -O -K >> ${outfile}.ps
 		# log $? "grdcontour"
 
-		# gmt psxy ${work}/isobath.xyz ${projX} ${envelopelambert93} -S+0.4c -W1p,red -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/baseline_spline ${projX} ${envelopelambert93} -S+0.4c -W1p,black -P -O -K >> ${outfile}.ps
-		
-		# gmt psxy ${work}/coast-lamb93.xy ${projX} ${envelopelambert93} -S+0.2c -W0.2p,black -P -O -K >> ${outfile}.ps
-		# gmt psxy inputs/fab-coast-lambert93.dat ${projX} ${envelopelambert93} -S+0.1c -W0.1p,red -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/tmp_coast-lamb93.xy ${projX} ${envelopelambert93}  -W1p,red -S+0.05c -P -O -K >> ${outfile}.ps
+		#Print in different colors points to be studyied + ref.location point
+		gmt psxy ${work}/siteref.xyz ${projX} ${envelopelambert93} -S+0.4c -W0.7p,black -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site1.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gblue -W0.7p,blue -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site2.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gred -W0.7p,red -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site3.xyz ${projX} ${envelopelambert93} -Sp0.4c -Ggreen -W0.7p,green -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site4.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gpurple -W0.7p,purple -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site5.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gorange -W0.7p,orange -P -O -K >> ${outfile}.ps
 
-		# gmt psxy -L ${work}/polygon-i.xy ${projX} ${envelopelambert93}  -W1p,green -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/tmp_c1.xy ${projX} ${envelopelambert93}  -W1p,black -S+0.08c -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/tmp_c2.xy ${projX} ${envelopelambert93}  -W1p,red -S+0.08c -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site6.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gblue -W0.7p,blue -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site7.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gred -W0.7p,red -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site8.xyz ${projX} ${envelopelambert93} -Sp0.4c -Ggreen -W0.7p,green -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site9.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gpurple -W0.7p,purple -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site10.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gorange -W0.7p,orange -P -O -K >> ${outfile}.ps
 
-		# gmt psxy ${work}/coast-intersections-points ${projX} ${envelopelambert93}  -W0.5p,red -S+0.1c -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/testpoints ${projX} ${envelopelambert93}  -W0.5p,black -S+0.1c -P -O -K >> ${outfile}.ps
-		
 
-		if [ -f ${work}/isobathblockmean.xyz ] ; then 
-			gmt psxy ${work}/isobathblockmean.xyz ${projX} ${envelopelambert93} -S+0.4c -W1p,blue -P -O -K >> ${outfile}.ps
-		fi
 
-		for profile in $(ls ${work}/profiletrack*) ; do
-			tail -n +2 $profile > ${work}/profiletmp
-			gmt psxy -L ${work}/profiletmp ${projX} ${envelopelambert93} -W0.5p,brown -P -O -K >> ${outfile}.ps
-		done
-		log $? "psxy"
+		#Print ci and bi points
+		# gmt psxy ${work}/baseline_spline ${projX} ${envelopelambert93} -Sp0.15c -W0.7p,black -P -O -K >> ${outfile}.ps
+		# gmt psxy ${work}/coast-intersections-points.xy ${projX} ${envelopelambert93} -Sp0.15c -W0.7p,black  -P -O -K >> ${outfile}.ps
+
+		## Print support point of the baseline
+		# if [ -f ${work}/isobathblockmean.xyz ] ; then 
+		# 	gmt psxy ${work}/isobathblockmean.xyz ${projX} ${envelopelambert93} -S+0.4c -W1p,blue -P -O -K >> ${outfile}.ps
+		# fi
+
+		# ## Print profiles
+		# for profile in $(ls ${work}/profiletrack*) ; do
+		# 	tail -n +2 $profile > ${work}/profiletmp
+		# 	gmt psxy -L ${work}/profiletmp ${projX} ${envelopelambert93} -W0.5p,black -P -O -K >> ${outfile}.ps
+		# done
+		# log $? "psxy"
 
 		gmt	psscale -D21/9/17.5/0.3 -C$palette -B500:"":/:"Depth(m)": -E -O  >> ${outfile}.ps
 		log $? "psscale"
@@ -454,30 +550,13 @@ if [ "${GMT}" = true ]; then
 	else
 		palette="work/shallow-water.cpt"
 		gmt makecpt -Z-500/0/50 -Csealand -G-5000/0 -M > $palette
-		# gmt	grdimage ${bathy} $projection $envelope -C$palette -P -K > ${outfile}.ps
-		# log $? "grdimage"
+
 		gmt pscoast $projection $envelope -Df -G#d9bb7a -Cwhite -N1/0.2p,#0000FF,solid  -P -K  >> ${outfile}.ps
 		log $? "pscoast"
 		gmt	psbasemap $envelope $projection $echelle $rose -Bf0.5a1:longitude:/f0.25a0.5:latitude:/:."bla":WeSn -P -O -K >> ${outfile}.ps
 		log $? "psbasemap"
-		# gmt	grdcontour $bathy $envelope -S $projection -C$contourfile -A60+gwhite+f4 -Wcthinnest,black,solid -Wathinner,black,solid -P -O -K >> ${outfile}.ps
-		# log $? "grdcontour"
 
-		# gmt psxy ${work}/isobath.xyz $projection $envelope -S+0.4c -W1p,red -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/baseline_spline $projection $envelope -S+0.4c -W1p,black -P -O -K >> ${outfile}.ps
 		gmt psxy ${input}/coast.dat $projection $envelope -S+0.1c -W1p,black -P -O -K >> ${outfile}.ps
-		# gmt psxy ${work}/coast-lamb93-inverted.xy $projection $envelope -S+0.1c -W0.1p,red -P -O -K >> ${outfile}.ps
-
-		# if [ -f ${work}/isobathblockmean.xyz ] ; then 
-		# 	gmt psxy ${work}/isobathblockmean.xyz $projection $envelope -S+0.4c -W1p,blue -P -O -K >> ${outfile}.ps
-		# fi
-
-		# gmt psxy ${work}/track.xyz $projection $envelope -S+0.4c -W1p,black -P -O -K >> ${outfile}.ps
-		# # for profile in $(ls ${work}/profiletrack*) ; do
-		# # 	tail -n +2 $profile > ${work}/profiletmp
-		# # 	gmt psxy ${work}/profiletmp $projection $envelope -Sp0.1c -W0.5p,brown -P -O -K >> ${outfile}.ps
-		# # done
-		# log $? "psxy"
 
 		gmt	psscale -D21/9/17.5/0.3 -C$palette -B500:"":/:"Depth(m)": -E -O  >> ${outfile}.ps
 		log $? "psscale"

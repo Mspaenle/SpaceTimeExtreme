@@ -33,14 +33,23 @@ export POLYGONINC=3000
 #########################
 ## Extract storms data ##
 #########################
-export HASEXTRACTED=false
-export NEARNEIGHBORINC=0.01
-export NEARNEIGHBORS=5k
+export HASEXTRACTED=true
+export NEARNEIGHBORINC=1000
+export NEARNEIGHBORS=10000
 export NEARNEIGHBORN=4/2
 
 export STORMSDIR=inputs/storms
-#export VARIABLES="hs_uplifted dir fp"
-export VARIABLES="dir"
+export STORM=inputs/storms/storm-0.nc
+export VARIABLES="hs_uplifted dir tp_uplifted"
+# export VARIABLES="dir"
+
+
+#################
+## Wave impact ##
+#################
+export DOIMPACT=true
+
+
 
 ################
 ## GMT PLOTS  ##
