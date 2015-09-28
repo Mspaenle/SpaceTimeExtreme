@@ -204,7 +204,7 @@ if [ "${HASGEOMETRY}" = false ]; then
 	fi
 
 	echo "profilenb c1x c1y c2x c2y :" > ${work}/coast-intersections-points-info
-	echo "profilenb xc yc" > ${work}/coast-intersections-points-tmp
+	echo "profilenb xc yc delta xt yt" > ${work}/coast-intersections-points-tmp
 	log $? "prepare coast-intersections-points file"
 
 	for profile in $(ls ${work}/profiletrack*) ; do
@@ -334,7 +334,6 @@ awk '{print $2,$3}' ${work}/coast-intersections-points > $work/coast-intersectio
 if [ "${HASEXTRACTED}" = false ]; then
 	# Interpolation of vars to the (xi,yi) points, i.e. the baselines points
 	storms=$(ls ${STORMSDIR}/storm*.nc)
-	
 	storms=${STORM} ## chunt the previous line
 
 	vars=${VARIABLES}
@@ -360,7 +359,7 @@ if [ "${HASEXTRACTED}" = false ]; then
 	log $? "projection mesh to lamb93"
 
 	for storm in ${storms} ; do #for each storm
-		nbstorm=$(echo $storm|grep -o '[0-9]\+')
+		nbstorm=$(echo $storm| awk -F "/" '{print $NF}' | grep -o '[0-9]\+')
 		log "notice" "work on storm ${nbstorm}"
 
 		for var in ${vars} ; do #for each var
@@ -378,15 +377,15 @@ if [ "${HASEXTRACTED}" = false ]; then
 
 				paste $work/nodes-lamb93.xy $work/$var-$t > $work/$var-$t-bis.xyz
 				awk '{print $1,$2,$3}' $work/$var-$t-bis.xyz > $work/$var-$t.xyz
-				log $? "prepare xyz file"
+				# log $? "prepare xyz file"
 
 				# gmt xyz2grd $work/$var-$t.xyz  ${envelopelambert93} -I1000/1000 -G$work/$var-$t.grd
 				gmt nearneighbor $work/$var-$t.xyz ${envelopelambert93}  -S${NEARNEIGHBORS} -N${NEARNEIGHBORN} -I${NEARNEIGHBORINC}/${NEARNEIGHBORINC} -G$work/$var-$t.grd
 				# gmt nearneighbor $work/$var-$t.xyz ${envelopelambert93}  -S10000 -N4/2 -I1000/1000 -G$work/$var-$t.grd
-				log $? "xyz2grd"
+				# log $? "xyz2grd"
 
 				gmt grdtrack ${work}/baseline_spline -G$work/$var-$t.grd -sa |awk '{print $3}' > ${work}/${var}-tmp
-				log $? "grdtrack var:$var t:$t"
+				# log $? "grdtrack var:$var t:$t"
 				paste ${work}/${var}-a ${work}/${var}-tmp > ${work}/${var}-b
 				mv ${work}/${var}-b ${work}/${var}-a
 			done
@@ -396,6 +395,82 @@ if [ "${HASEXTRACTED}" = false ]; then
 fi
 
 
+#################
+## Wave impact ##
+#################
+if [ "${DOIMPACT}" = true ]; then
+	sed '1d' ${work}/coast-intersections-points > ${work}/coast-intersections-points-withoutheader
+	Rscript resources/R/orientation-coastpoints.R
+	log $? "R script"
+
+	storms=$(ls ${STORMSDIR}/storm*.nc)
+	storms=${STORM} ## chunt the previous line
+	vars=${VARIABLES}
+
+	# GET the values of delta to find w_i (see figures in chailan et al. (2015))
+	# echo "delta_i" > ${work}/delta_i
+	# awk '{print $4}' ${work}/coast-intersections-points-tmp >> ${work}/delta_i
+	awk '{print $3}' ${work}/delta_i-R > ${work}/delta_i
+
+	for storm in ${storms} ; do #for each storm
+		nbstorm=$(echo $storm| awk -F "/" '{print $NF}' | grep -o '[0-9]\+')
+		log "notice" "work on wave impact for storm ${nbstorm}"
+
+		# create file containing profiles number
+		awk '{print $1}' ${work}/coast-intersections-points > ${output}/impacts-storm-${nbstorm}
+
+		# find all time steps
+		nbtimesteps=$(ncks -M ${storm} |grep "name = time" | awk -F= '{print $3}' |bc -l)
+		# nbtimesteps=1
+
+		for t in $(seq 2 $((nbtimesteps+1))); do #for all time step in the given storm
+
+			# create temp file containing profiles number
+			awk '{print $1}' ${work}/coast-intersections-points > ${work}/wave.tmp
+
+			for var in ${vars} ; do #for each var extract dir hs tp
+				outfile2=${output}/storm-${nbstorm}-$var
+				cut -f ${t} ${outfile2} > ${work}/${var}
+				echo "${var}" > ${work}/${var}.2
+				cat ${work}/${var}  >> ${work}/${var}.2
+				sed '$d' ${work}/${var}.2 > ${work}/${var}
+				rm ${work}/${var}.2 
+				paste ${work}/wave.tmp ${work}/${var} > ${work}/wave.tmp2
+				mv ${work}/wave.tmp2 ${work}/wave.tmp
+			done
+
+			#store info at time t
+			paste ${work}/wave.tmp ${work}/delta_i > ${work}/impact_infos
+
+			#computation of impact at time t along all profiles
+			awk -v outf=${work}/impact-${t} -v t=${t} '
+     		BEGIN { 
+     		 numpi  = 3.1415926535897932384626433832795;
+     		 rho = 1000;
+     		 g = 9.81;
+             fileout = outf;
+             getline; 
+	         printf("Q_it Phi_%d\n",t-1) > fileout ;
+           	}
+           	{ 
+           	 profile=$1 ; h=$2 ; dirdeg=$3; t=$4; delta=$5;
+           	 R=(2*numpi/360)*(180-$3);
+           	 wit = delta-R; 
+             q=1/8*rho*g*h*h*t;
+             phi=q*sin(wit)*cos(wit);
+             
+             printf("%f %f\n",q,phi) >> fileout ;
+            } 
+      		' ${work}/impact_infos
+			# log $? "impact infos time ${t}"
+			awk '{print $2}' ${work}/impact-${t} > ${work}/impact-${t}-phi
+			# log $? "impact phi time ${t}"
+			paste ${output}/impacts-storm-${nbstorm} ${work}/impact-${t}-phi > ${work}/impacts-storm-${nbstorm}
+			# log $? "paste phi time ${t}"
+			mv ${work}/impacts-storm-${nbstorm} ${output}/impacts-storm-${nbstorm}
+		done
+	done
+fi
 
 #############################
 ## Locations of extraction ##
@@ -417,74 +492,19 @@ sed -n '79p' ${work}/baseline_spline  > ${work}/site8.xyz
 sed -n '109p' ${work}/baseline_spline  > ${work}/site9.xyz
 sed -n '139p' ${work}/baseline_spline  > ${work}/site10.xyz
 
-#################
-## Wave impact ##
-#################
-if [ "${DOIMPACT}" = true ]; then
-	storms=${STORM}
-	vars=${VARIABLES}
+## DEBUG ANGLE ##
+sed '1d' ${work}/coast-intersections-points > ${work}/coast-intersections-points-withoutheader
+Rscript resources/R/orientation-coastpoints.R
 
-	# GET the values of delta to find w_i (see figures in chailan et al. (2015))
-	echo "delta_i" > ${work}/delta_i
-	awk '{print $4}' ${work}/coast-intersections-points-tmp >> ${work}/delta_i
-
-	for storm in ${storms} ; do #for each storm
-		nbstorm=$(echo $storm|grep -o '[0-9]\+')
-		log "notice" "work on wave impact for storm ${nbstorm}"
-
-		# create file containing profiles number
-		awk '{print $1}' ${work}/coast-intersections-points > ${output}/impacts-storm-${nbstorm}
-
-		# find all time steps
-		nbtimesteps=$(ncks -M ${storm} |grep "name = time" | awk -F= '{print $3}' |bc -l)
-		nbtimesteps=1
-
-		for t in $(seq 2 $((nbtimesteps+1))); do #for all time step in the given storm
-
-			# create temp file containing profiles number
-			awk '{print $1}' ${work}/coast-intersections-points > ${work}/wave.tmp
-
-			for var in ${vars} ; do #for each var extract dir hs tp
-				outfile2=${output}/storm-${nbstorm}-$var
-				cut -f ${t} ${outfile2} > ${work}/${var}
-				echo "${var}" > ${work}/${var}.2
-				cat ${work}/${var}  >> ${work}/${var}.2
-				sed '$d' ${work}/${var}.2 > ${work}/${var}
-				rm ${work}/${var}.2 
-				paste ${work}/wave.tmp ${work}/${var} > ${work}/wave.tmp2
-				mv ${work}/wave.tmp2 ${work}/wave.tmp
-			done
-
-			#store info at time t
-			paste ${work}/wave.tmp ${work}/delta_i > ${work}/impact_infos
-			
-			#computation of impact at time t along all profiles
-			awk -v outf=${work}/impact-${t} '
-     		BEGIN { 
-     		 numpi  = 3.1415926535897932384626433832795;
-     		 rho = 1000;
-     		 g = 9.81;
-             fileout = outf;
-	         print("Q_it Phi_it") > fileout ;
-           	}
-           	{ 
-           	 profile=$1 ; h=$2 ; dirdeg=$3; t=$4; delta=$5;
-             R=(2*numpi/360)*dirdeg;
-             psi=2*numpi-R;
-             wit=psi-delta;
-             q=1/8*rho*g*h*h*t;
-             phi=q*sin(wit)*cos(wit);
-             
-             printf("%f %f\n",q,phi) >> fileout ;
-            } 
-      		' ${work}/impact_infos
-			log "notice" "Number of profiles created : $nbrprofiles"
-		done
-		#4 on joint tous les fichiers crees pour les pas de temps dans un fichier impact avec le nom de la tempetes
-	done
-fi
-#5 on extrait que les 5 points qui nous interessent
-
+echo "angle_profile" > work/angles-toto 
+echo "angle_profile" > work/angles-toto-label 
+awk -v toto=work/toto 'BEGIN {pi=3.1415926535897932384626433832795; getline;} {angle=$3*360/(2*pi); printf("%d\n",angle);} ' work/delta_i-R >> work/angles-toto
+awk -v toto=work/toto 'BEGIN {pi=3.1415926535897932384626433832795; getline;} {angle=$3*360/(2*pi); printf("%d\n",angle);} ' work/delta_i-R >> work/angles-toto-label
+# awk -v toto=work/toto 'BEGIN {pi=3.1415926535897932384626433832795; getline;} {angle=$1*360/(2*pi)+270; printf("%d\n",angle);} ' work/delta_i >> work/angles-toto
+# awk -v toto=work/toto 'BEGIN {pi=3.1415926535897932384626433832795; getline;} {angle=$1*360/(2*pi); printf("%d\n",angle);} ' work/delta_i >> work/angles-toto-label
+cat work/coast-intersections-points |awk '{print $2,$3}' > work/angles-tototmp
+paste work/angles-tototmp work/angles-toto > work/angles-tototmp2
+paste work/angles-tototmp2 work/angles-toto-label > work/angles-debug
 
 ################
 ## GMT PLOTS  ##
@@ -511,18 +531,22 @@ if [ "${GMT}" = true ]; then
 
 		#Print in different colors points to be studyied + ref.location point
 		gmt psxy ${work}/siteref.xyz ${projX} ${envelopelambert93} -S+0.4c -W0.7p,black -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/site1.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gblue -W0.7p,blue -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/site2.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gred -W0.7p,red -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/site3.xyz ${projX} ${envelopelambert93} -Sp0.4c -Ggreen -W0.7p,green -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/site4.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gpurple -W0.7p,purple -P -O -K >> ${outfile}.ps
-		gmt psxy ${work}/site5.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gorange -W0.7p,orange -P -O -K >> ${outfile}.ps
-
+		gmt psxy ${work}/site1.xyz ${projX} ${envelopelambert93} -S+0.4c -Gblue -W0.7p,blue -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site2.xyz ${projX} ${envelopelambert93} -S+0.4c -Gred -W0.7p,red -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site3.xyz ${projX} ${envelopelambert93} -S+0.4c -Ggreen -W0.7p,green -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site4.xyz ${projX} ${envelopelambert93} -S+0.4c -Gpurple -W0.7p,purple -P -O -K >> ${outfile}.ps
+		gmt psxy ${work}/site5.xyz ${projX} ${envelopelambert93} -S+0.4c -Gorange -W0.7p,orange -P -O -K >> ${outfile}.ps
+		#Print pairs
 		gmt psxy ${work}/site6.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gblue -W0.7p,blue -P -O -K >> ${outfile}.ps
 		gmt psxy ${work}/site7.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gred -W0.7p,red -P -O -K >> ${outfile}.ps
 		gmt psxy ${work}/site8.xyz ${projX} ${envelopelambert93} -Sp0.4c -Ggreen -W0.7p,green -P -O -K >> ${outfile}.ps
 		gmt psxy ${work}/site9.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gpurple -W0.7p,purple -P -O -K >> ${outfile}.ps
 		gmt psxy ${work}/site10.xyz ${projX} ${envelopelambert93} -Sp0.4c -Gorange -W0.7p,orange -P -O -K >> ${outfile}.ps
 
+		#Print angles in debug
+		gmt psxy ${projX} ${envelopelambert93} work/angles-debug  -S+0.2c -W0.1p,brown -P -K -O >> ${outfile}.ps
+		gmt pstext ${projX} ${envelopelambert93} work/angles-debug -F+f3p,Helvetica,black+a -P -K -O >> ${outfile}.ps
+		log $? "pstext labels"
 
 
 		#Print ci and bi points
@@ -548,6 +572,8 @@ if [ "${GMT}" = true ]; then
 		log $? "psraster"
 		rm ${outfile}.ps
 	else
+		#DEPRECATED#
+		log "notice" "DEPRECATED: please check the code before use"
 		palette="work/shallow-water.cpt"
 		gmt makecpt -Z-500/0/50 -Csealand -G-5000/0 -M > $palette
 
