@@ -2,7 +2,7 @@ require(fExtremes)
 require(evd)
 require(ncdf4)
 
-
+LOCAL<-TRUE
 #------------------------------------------------------------------------------#
 # 0/ source properties and environment to run the model
 print("Load environment")
@@ -20,9 +20,9 @@ if (PREROUTINES) {
 
 #------------------------------------------------------------------------------#
 # 2/ GEV fit (above threshold) at reference station and store marginal results
-print("Reference (t0) location GEV Fit")
 source("marginFit.R")
 if (PREROUTINES) {
+  print("Reference (t0) location GEV Fit")
   paramsXsGEV.Y <- marginGEVExceedanceFit(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
   ref.threshold <- as.numeric(paramsXsGEV.X$threshold)
@@ -94,7 +94,7 @@ Xs.3 <- lift(Xs.1 = Xs.1, var.x = env.var.x, var.y = env.var.y, t0.i = t0.i,
 
 
 # 7/ MPI handling
-mpi.close.Rslaves()
-mpi.quit()
+# mpi.close.Rslaves()
+# mpi.quit()
 
 

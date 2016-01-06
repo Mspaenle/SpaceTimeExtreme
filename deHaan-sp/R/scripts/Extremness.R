@@ -1,7 +1,7 @@
 LOCAL <- TRUE
-LIFTEDDIR <- "/Users/rchailan/Desktop/lifted"
-SUBFOLDERSTORM <- "t0i-2919/mode2-T100"
-STORMID <- 3
+LIFTEDDIR <- "/Users/rchailan/Desktop/lifted/fitsok"
+SUBFOLDERSTORM <- "T25-REF2342"
+STORMID <- 9
 STORM <- paste0("storm-",STORMID,".nc")
 PATHFITINFOX <- paste(LIFTEDDIR,"gevfitsinfos-x.nc",sep="/")
 PATHFITINFOY <- paste(LIFTEDDIR,"gevfitsinfos-y.nc",sep="/")
@@ -18,19 +18,16 @@ source("lifter.R")
 source("extractTimeSerie.R")
 source("marginFit.R")
 
-env.ref.t0 <- 3284
+env.ref.t0 <- 2342
 
-Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)  
-paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
-# ref.threshold.x <- as.numeric(paramsXsGEV.X$threshold)
-# ref.nbexceed.x <- as.numeric(paramsXsGEV.X$nbexceedcluster)
-Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)  
-paramsXsGEV.Y <- marginGEVExceedanceFit2(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
-# ref.threshold.y <- as.numeric(paramsXsGEV.Y$threshold)
-# ref.nbexceed.y <- as.numeric(paramsXsGEV.Y$nbexceedcluster)
+# Xs.ref.x <- Xs(env.file, env.var.x, index.location=env.ref.t0, grid=env.grid)  
+# paramsXsGEV.X <- marginGEVExceedanceFit(x = Xs.ref.x$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
+# Xs.ref.y <- Xs(env.file, env.var.y, index.location=env.ref.t0, grid=env.grid)  
+# paramsXsGEV.Y <- marginGEVExceedanceFit2(x = Xs.ref.y$var, quantile = 1-env.p, cmax = env.cmax, r = env.consecutivebelow)
 
 #------------------------------------------------------------------------------#
 ncstorm <- nc_open(filename = PATHSTORMNC, readunlim = FALSE)
+cat(STORMID,"---------\n")
 
 if (env.t0.mode == 1 || env.t0.mode == 2) {  
   #---------- X ----------#
@@ -43,7 +40,7 @@ if (env.t0.mode == 1 || env.t0.mode == 2) {
   
   max.i.init <- ncdfmax(file = PATHSTORMNC, var = env.var.x, index.ref.location = env.ref.t0, grid = env.grid)
   max.i.uplifted <- ncdfmax(file = PATHSTORMNC, var = paste0(env.var.x,"_uplifted"), index.ref.location = env.ref.t0, grid = env.grid)
-  ratio <- nbexceed/455884
+  ratio <- nbexceed/455832
 
   m.rperiod.init <- initialStormReturnPeriod(zp = max.i.init, obs.per.year = env.obsperyear, 
                                         ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)

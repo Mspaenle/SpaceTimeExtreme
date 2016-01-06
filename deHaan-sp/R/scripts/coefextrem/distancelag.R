@@ -4,8 +4,8 @@
 require(SpatialExtremes)
 require(ncdf4)
 infile <- "../../../inputs/ww3/megagol2015a-gol.nc"
-siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat" #N-SvsW-E
-# siteInfoFile <- "../../../inputs/sitesInfo/sites-info-NEvsSE.dat"
+# siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat" #N-SvsW-E
+siteInfoFile <- "../../../inputs/sitesInfo/sites-info-NEvsSE.dat"
 # sites.xyz <- "../../../inputs/sitesInfo/sites.xyz.dat"
 sites.xyz <- "../../../inputs/sitesInfo/CopyOfsites.xyz.dat"
 
@@ -80,11 +80,12 @@ theta.estimator.censored <- function (df.frech, df.siteGeomInfo, quantile, timeg
       
       U <- max(U.s1,U.s2)
       for (j in jseq) {
-        max.couple <- max( Y.s1[j], Y.s2[j] )
+        max.couple <- max(Y.s1[j], Y.s2[j])
+        
         if (max.couple > U) {
           m <- m + 1
         }
-        s <- s + ( 1/max( Y.s1[j], Y.s2[j], U.s1, U.s2 ) )  
+        s <- s + ( 1/max( max.couple, U ) )  
       }
       theta <- m / s
       df <- rbind(df,data.frame("distance"=dist.h,"orientation"=orientation,"theta"=theta,"year"=year))
@@ -109,7 +110,8 @@ plotThetaDistanceLag <- function (df.res,omnidir) {
 #     ggtitle(paste0("Extremal Coefficient distance - 500 bins")) +
     ylab(expression("Extremal Coefficient":hat(theta)(h))) + 
     xlab("Distance h (km)") +
-    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125))
+#     scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125),limits=c(1,2))
+  scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125))
   
   if (omnidir) {
     fit <- loess.sd(y = df.res$theta,x=df.res$distance/1000, nsigma = 1.96)
@@ -121,7 +123,7 @@ plotThetaDistanceLag <- function (df.res,omnidir) {
     
     p <- p + geom_point(alpha=0.7,shape=3) +
       geom_line(data=df.prediction, mapping=aes(x=distance,y=fit),alpha=1,size=1,colour="black") +
-      geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill="lightgrey", alpha=.3) +
+      geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill="lightgrey", alpha=.15) +
       geom_line(data=df.prediction,aes(x=distance,y = upper), colour = 'grey') +
       geom_line(data=df.prediction,aes(x=distance,y = lower), colour = 'grey')
     
@@ -139,7 +141,7 @@ plotThetaDistanceLag <- function (df.res,omnidir) {
       
       p <- p + geom_point(alpha=0.7,shape=3,aes(colour=orientation)) +
         geom_line(data=df.prediction, mapping=aes(x=distance,y=fit),alpha=1,size=1,colour=colours[k]) +
-        geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill=colours[k], alpha=.3) +
+        geom_ribbon(data=df.prediction, aes(x=distance, ymax=upper, ymin=lower), fill=colours[k], alpha=.15) +
         geom_line(data=df.prediction,aes(x=distance,y = upper), colour = colours[k]) +
         geom_line(data=df.prediction,aes(x=distance,y = lower), colour = colours[k])
       k<-k+1
@@ -157,14 +159,14 @@ plotThetaDistanceLag <- function (df.res,omnidir) {
 # Collect data
 # years <- seq(2011,2012) 
 years <- seq(1961,2012) 
-# years <- c(2012)
+# years <- c(2010)
 res.total <- NULL
 count<-0
-j<-0
+achiv<-0
 LOADDATA=FALSE
 if (LOADDATA) {
   for (year in years) {
-    print(paste0("Achievement: ",j,"/",length(years),"  ",Sys.time()))
+    print(paste0("Achievement: ",achiv,"/",length(years),"  ",Sys.time()))
     count<-count+1
     isCollected <- FALSE
     if (!isCollected) {
@@ -182,35 +184,35 @@ if (LOADDATA) {
     
     isThetaEstimated <- FALSE
     if (!isThetaEstimated) {
-      quantile<-0.95
-      timegap<-1
+      quantile <- 0.95
+      timegap <- 1
       res <- theta.estimator.censored(data.var.frech,data.siteGeomInfo,quantile,timegap,year)
       #     levels(res$orientation)<-c("N-S","NE-SW","NW-SE","W-E")
-      #     levels(res$orientation)<-c("NE-SW","SE-NW")
-      levels(res$orientation)<-c("N-S","W-E")
+          levels(res$orientation)<-c("NE-SW","SE-NW")
+#       levels(res$orientation)<-c("N-S","W-E")
     }
     res.total <- rbind(res.total,res)
-    j<-j+1
+    achiv<-achiv+1
   }  
   res<-res.total
   rm(res.total)
 }
 
-
 # plotThetaDistanceLag(res[1<res$theta & res$theta < 2.04 ,])
 
-omniDir<-TRUE
-n.bins <- 500
+omniDir<-FALSE
+n.bins <- 1500
 dist <- res$distance
 angles <- as.numeric(factor(levels(res$orientation)))
-if (!missing(n.bins)) {
+res.bin <- NULL
+if (!is.null(n.bins)) {
   bins <- c(0, quantile(dist, 1:n.bins/(n.bins + 1)), max(dist))
   if (omniDir) {
     thetaBinned <- matrix(NA, nrow = n.bins + 1, ncol = 1)
       for (k in 1:(n.bins + 1)) {
         idx <- which((dist <= bins[k + 1]) & (dist > bins[k]) )
         if (length(idx) > 0) 
-          thetaBinned[k,1] <- mean(res$theta[idx])
+          thetaBinned[k,1] <- median(res$theta[idx])
     }
   } else {
     thetaBinned <- matrix(NA, nrow = n.bins + 1, ncol = length(angles))
@@ -219,20 +221,26 @@ if (!missing(n.bins)) {
       for (k in 1:(n.bins + 1)) {
         idx <- which((dist <= bins[k + 1]) & (dist > bins[k]) & (as.numeric(orientation) == a) )
         if (length(idx) > 0) 
-          thetaBinned[k,a] <- mean(res$theta[idx])
+          thetaBinned[k,a] <- median(res$theta[idx])
       } 
     }
   }
   
   dist.bins <- (bins[-1] + bins[-(n.bins + 2)])/2
-}
-res.bin <- NULL
-if (omniDir) {
-  res.bin<-rbind(res.bin,data.frame("theta"=thetaBinned[,1],"distance"=dist.bins))
+  
+  if (omniDir) {
+    res.bin<-rbind(res.bin,data.frame("theta"=thetaBinned[,1],"distance"=dist.bins))
+  } else {
+    for (a in angles) {
+      res.bin<-rbind(res.bin,data.frame("theta"=thetaBinned[,a],"distance"=dist.bins,"orientation"=levels(res$orientation)[a]))
+    } 
+  }
 } else {
-  for (a in angles) {
-    res.bin<-rbind(res.bin,data.frame("theta"=thetaBinned[,a],"distance"=dist.bins,"orientation"=levels(res$orientation)[a]))
-  } 
+  if (omniDir) {
+    res.bin<-data.frame("theta"=res$theta,"distance"=res$distance)
+  } else {
+    res.bin<-data.frame("theta"=res$theta,"distance"=res$distance,"orientation"=res$orientation)
+  }
 }
 # res.bin<-data.frame("theta"=thetaBinned,"distance"=dist.bins)
 # plotThetaDistanceLag(res.bin[1<res.bin$theta & res.bin$theta < 2.04 & !is.na(res.bin$theta) ,])

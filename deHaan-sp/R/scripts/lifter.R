@@ -164,11 +164,11 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
     # equal to the return level corresponding to env.returnperiod  
     t0.i <- NULL
     t0 <- NULL
+    
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
       
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
-      
       
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
@@ -181,9 +181,14 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
       ratio <- ratioExceedances(file = file.origin, var = var, location = location.max.i, nbexceed = nbexceed , grid = grid)
       m.rlevel <- estimatingStormReturnLevel(annual.return.period = m.returnperiod, obs.per.year = obsperyear, 
                                              ratio.exceedances = ratio, mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
-      
+      new.rperiod <- initialStormReturnPeriod(zp = m.rlevel, obs.per.year = obsperyear, ratio.exceedances = ratio,
+                                              mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
+      origin.rperiod <- initialStormReturnPeriod(zp = max.i, obs.per.year = obsperyear, ratio.exceedances = ratio,
+                                              mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       cat("DEBUG: Storm",i,", location:",location.max.i, "\n")
-      cat("DEBUG: var|rlevel|mu|sigma|xi|max.i ",varid,"|",as.numeric(m.rlevel),"|",mu,"|",sigma,"|",xi,"|",as.numeric(max.i),"\n")
+      cat("DEBUG: var|mu|sigma|xi ",varid,"|",mu,"|",sigma,"|",xi,"\n")
+      cat("DEBUG: new.rlevel|origin.rlevel",as.numeric(m.rlevel),"|",as.numeric(max.i),"\n")
+      cat("DEBUG: new.rperiod|origin.rperiod",new.rperiod,"|",origin.rperiod,"\n")
       
       t0 <- (( as.numeric(m.rlevel) + (sigma / xi) - mu ) / ( as.numeric(max.i) + (sigma / xi) - mu ))^(1/xi)
       t0.i <- c(t0.i,t0)
@@ -281,6 +286,7 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
     max <- NULL
     for (j in 1:length(file.hyperslabs)) {
       system(command = paste(env,"ncks -4 -O ",file.hyperslabs[j],tmp.remain))
+      cat(paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char),"\n")
       system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
       
       tmp.nc<-nc_open(tmp.char)

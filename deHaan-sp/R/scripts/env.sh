@@ -28,14 +28,17 @@ export PATH=/Library/Frameworks/PROJ.framework/Programs:$PATH
 export PATH=$PATH:/Users/rchailan/Applications/pdsh/2.18/bin
 
 ## CDO ##
-#export PATH=/Users/rchailan/Applications/cdo/1.6.3/bin:$PATH
-export PATH=/Users/rchailan/Applications/cdo/1.6.5.1/bin:$PATH
+export PATH=/Users/rchailan/Applications/cdo/1.6.9/bin:$PATH
+
+## GRIB_API ##
+export PATH=/Users/rchailan/Applications/grib-api/1.13.1/bin:$PATH
+
+## NCL ##
+export NCARG_ROOT=/Users/rchailan/Applications/ncl/6.3.0
+export PATH=$NCARG_ROOT/bin:$PATH
 
 ## NCO ##
-#export PATH=/Users/rchailan/Applications/nco/4.4.4/bin:$PATH
-#export PATH=/Users/rchailan/Applications/nco/4.4.6/bin:$PATH
-#export PATH=/Users/rchailan/Applications/nco/4.4.6_2/bin:$PATH
-export PATH=/Users/rchailan/Applications/nco/unstable/bin:$PATH
+export PATH=/Users/rchailan/Applications/nco/4.5.3/bin:$PATH
 
 ## Netcdf ##
 #4.1.3 fortran

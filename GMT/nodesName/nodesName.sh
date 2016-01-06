@@ -38,6 +38,7 @@ gmt gmtset MAP_TITLE_OFFSET 0.3c
 gmt gmtset FONT_LABEL 8p
 gmt gmtset MAP_LABEL_OFFSET 0.2c
 gmt gmtset FORMAT_FLOAT_OUT %8.8f
+gmt gmtset MAP_ANNOT_OBLIQUE 32
 ## END PARAMETERS ##
 
 # Set envelope
@@ -72,7 +73,8 @@ log $? "extract - only 1 over 20 - label points"
 sed 's/node//g' $work/labeltmp.xy > $work/label.xy
 
 ## PLOT ##
-gmt pscoast ${projection} ${envelope} -Df -G#d9bb7a -C#d9bb7a -N1/0.2p,#0000FF,solid  -P -K  >> ${outfile}.ps
+# gmt pscoast ${projection} ${envelope} -Df -G#d9bb7a -C#d9bb7a -N1/0.2p,#0000FF,solid  -P -K  >> ${outfile}.ps
+gmt pscoast ${projection} ${envelope} -Df -G200 -C200 -N1/0.2p,#000000,solid -P -K  >> ${outfile}.ps
 log $? "pscoast"
 
 gmt	psbasemap ${projection} ${envelope} ${echelle} ${rose} -Bf0.1a0.2:longitude:/f0.05a0.1:latitude:/:."Node names":WeSn -P -K -O >> ${outfile}.ps
@@ -85,8 +87,8 @@ log $? "psbasemap"
 # done
 
 gmt psxy ${envelope} ${projection} input/sites.xyz -W1,blue -S+0.2 -P -K -O >> ${outfile}.ps
-
-gmt psxy ${envelope} ${projection} $work/nodes.xy -S+0.05 -P -O >> ${outfile}.ps
+gmt pstext ${envelope} ${projection} input/sites.xyz -D0.3/0.3  -F+a39+f6p,Helvetica,black -P -O >> ${outfile}.ps
+# gmt psxy ${envelope} ${projection} $work/nodes.xy -S+0.05 -P -O >> ${outfile}.ps
 log $? "psxy nodes location"
 
 # gmt pstext ${envelope} ${projection} $work/label.xy  -F+a39+f6p,Helvetica,black -P -O >> ${outfile}.ps
