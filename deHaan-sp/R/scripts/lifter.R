@@ -167,9 +167,8 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
     
     for (i in 1:length(Xs.1)) {
       max.i <- ncdfmax(file = unlist(Xs.1[i]), var = varid, index.ref.location = NULL,  hyperslabs = ref.hyperslab, grid = grid)
-      
       location.max.i <- retrieveLocationMax(file = unlist(Xs.1[i]), var = varid, max = max.i, grid = grid)
-      
+      cat("DEBUG: location.max.i",location.max.i, "\n")
       infos <- retrieveFitInfo(file = tmpfitinfo.file, location = location.max.i , grid = grid)
       
       u <- as.numeric(unlist(infos["u"]))
@@ -185,8 +184,9 @@ computetzeroi <- function(Xs.1, var, t0.mode, paramsXsGEV, file.origin, quantile
                                               mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
       origin.rperiod <- initialStormReturnPeriod(zp = max.i, obs.per.year = obsperyear, ratio.exceedances = ratio,
                                               mu.hat = mu, sigma.hat = sigma, xi.hat = xi)
-      cat("DEBUG: Storm",i,", location:",location.max.i, "\n")
+#       cat("DEBUG: Storm",i,", location:",location.max.i, "\n")
       cat("DEBUG: var|mu|sigma|xi ",varid,"|",mu,"|",sigma,"|",xi,"\n")
+      cat("DEBUG: ratio exceedance|obsperyear ",ratio,"|",obsperyear,"\n")
       cat("DEBUG: new.rlevel|origin.rlevel",as.numeric(m.rlevel),"|",as.numeric(max.i),"\n")
       cat("DEBUG: new.rperiod|origin.rperiod",new.rperiod,"|",origin.rperiod,"\n")
       
@@ -238,8 +238,9 @@ retrieveLocationMax <- function (file, var, max, grid =TRUE) {
     # assume max value is unique
     ncfile <- nc_open(file,readunlim = FALSE)
     values <- ncvar_get(ncfile,var)
-    index.1D <- which(mapply(function(x, y) {isTRUE(all.equal(x, y,tolerance=0.00001))}, values, max), arr.ind=TRUE)
-    location<-floor(index.1D/ncol(values))+1
+    m<-which.min(abs(values-as.numeric(max)))
+    location<-as.numeric(arrayInd(m, dim(values))[,1])
+#     location<-as.numeric(which(abs(values-as.numeric(max))==min(abs(values-as.numeric(max))), arr.ind=TRUE)[,1])
   }    
   return(location)
 }
@@ -286,13 +287,12 @@ ncdfmax <- function (file, var, index.ref.location = NULL, hyperslabs = NULL,gri
     max <- NULL
     for (j in 1:length(file.hyperslabs)) {
       system(command = paste(env,"ncks -4 -O ",file.hyperslabs[j],tmp.remain))
-      cat(paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char),"\n")
       system(command = paste(env,"ncwa -4 -O -b -y max -v",var,tmp.remain,tmp.char))
       
       tmp.nc<-nc_open(tmp.char)
       new.max<-ncvar_get(tmp.nc,var)
       nc_close(tmp.nc)
-      cat("new.max :",new.max,"; max:",max,"\n")      
+      cat("file:",file.hyperslabs[j],"; max:",new.max,"\n")      
       if (is.null(max) || new.max > max) {
         max <- new.max
       } 

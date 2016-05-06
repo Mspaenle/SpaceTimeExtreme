@@ -1,9 +1,10 @@
 #! /bin/bash
 
-source "properties.sh"
+# source "properties.sh"
+# source "resources/sh/utility.sh"
+# rightnow
+# log "notice" "STARTING... $d"
 source "resources/sh/utility.sh"
-rightnow
-log "notice" "STARTING... $d"
 
 ################
 ## PARAMETERS ##

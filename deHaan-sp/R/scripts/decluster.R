@@ -245,9 +245,6 @@ createhyperslabsfiles <- function(file,var,index.ref.location) {
   if (nrow(index.ref.location) == 0) stop("index ref location file is empty or error during the reading")
   files.hyperslabs <- NULL
   for (i in 1:nrow(index.ref.location)) {
-    
-    print(paste("(Temporary hyperslabs files) Computing:",i,"on",nrow(index.ref.location)))
-    
     tmp.file <- paste(workdirtmp,"/tmphyperslabs-",i,".nc",sep="")
     files.hyperslabs<-c(files.hyperslabs,tmp.file)
     hyperslab <- paste("-X ",
@@ -256,7 +253,8 @@ createhyperslabsfiles <- function(file,var,index.ref.location) {
                        sprintf("%.11f",as.numeric(as.character(index.ref.location$lat.min[i]))),",",
                        sprintf("%.11f",as.numeric(as.character(index.ref.location$lat.max[i]))),
                        sep="")
-    
+#     cat("DEBUG:(Temporary hyperslabs files) Computing:",i,"on",nrow(index.ref.location)),"\n")
+#     cat("DEBUG:",paste(env,"ncks -4 -O",hyperslab,"-v time -v",var,file,tmp.file),"\n")
     system(command = paste(env,"ncks -4 -O",hyperslab,"-v time -v",var,file,tmp.file))
   }
   return(files.hyperslabs)

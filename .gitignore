@@ -69,3 +69,6 @@ Thumbs.db
 *.fdb_latexmk
 Documentation/spacetime.out
 *.pdf
+
+
+Data-on-Desktop/*

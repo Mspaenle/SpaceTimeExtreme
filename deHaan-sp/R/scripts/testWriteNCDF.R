@@ -1,9 +1,10 @@
 require(ncdf4)
 
 A <- "../../inputs/ww3/megagol2015a-gol-cleaned3.nc"
+A <- "/Users/rchailan/Desktop/OnGoing/SpaceTimeExtreme/Data-on-Desktop/gol/megagol2015a-gol-cleaned3.nc"
 prec="single"
 missval=1.e30
-B <- "toto.nc"
+B <- "~/Desktop/toto.nc"
 
 in.nc <- nc_open(filename = A, readunlim = FALSE)
 node <- ncvar_get(in.nc,"node")
