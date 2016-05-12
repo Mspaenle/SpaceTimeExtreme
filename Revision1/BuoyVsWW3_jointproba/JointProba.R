@@ -12,9 +12,10 @@ HAS_READ_MEGAGOL <- FALSE
 ## Define hs limits (to avoid outliers from measurement)
 hslim <- c(0,15)
 ## Stations to compare (must be in "Espiguette","Leucate","Sete","Banyuls")
-stations <- c("Espiguette","Leucate","Banyuls")
+stations <- c("Espiguette","Leucate","Sete","Banyuls")
 ## Define thresholds (proba forme)
-thresholds <- c(0.1,0.3,0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99)
+#thresholds <- c(0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99)
+thresholds <- seq(from = 0.5, to = 0.95, by = 0.05)
 
 ## Construct dataframe from observed data (candhis)
 if (!HAS_READ_CANDHIS) {
@@ -72,32 +73,46 @@ df.thresholds.mrg <- merge(emp.thresholds.candhis, emp.thresholds.megagol,
                            by = 'thresholds', suffixes = c('-candhis','-megagol'))
 
 ## For any thresholds compute joint proba for each source 
-df.jointproba <- data.frame(thresholds = emp.thresholds.candhis$thresholds)
-
 res.megagol <- res.candhis <- NULL
+c.megagol <- c.candhis <- NULL
 
-message("Counting empirical joint probabilities...")
+message("\nCounting empirical joint probabilities...")
 for (t in 1:nrow(emp.thresholds.candhis)) { # for each thresholds
   count.candhis <- 0
   count.megagol <- 0
-  for (r in 1:nrow(df.hs.mrg)) { # for each row
-    if (all(df.hs.mrg[r,1:length(stations)] > emp.thresholds.candhis[t,2:(length(stations)+1)])) {
-      count.candhis <- count.candhis+1
-    }
-    if (all(df.hs.mrg[r,(length(stations)+1):(2*length(stations))] > emp.thresholds.candhis[t,2:(length(stations)+1)])) {
-      count.megagol <- count.megagol+1
-    }
-  }
+  
+  count.candhis <- sum(apply(X = df.hs.mrg, MARGIN = 1, FUN = function(x) {
+                               all(x[1:length(stations)] > emp.thresholds.candhis[t,2:(length(stations)+1)])
+                             })
+  )
+  count.megagol <- sum(apply(X = df.hs.mrg, MARGIN = 1, FUN = function(x) {
+                               all(x[(length(stations)+1):(2*length(stations))] >  emp.thresholds.megagol[t,2:(length(stations)+1)])
+                            })
+  )
+  
   res.candhis <- c(res.candhis,count.candhis/nrow(df.hs.mrg))
   res.megagol <- c(res.megagol,count.megagol/nrow(df.hs.mrg))
+  c.candhis <- c(c.candhis,count.candhis)
+  c.megagol <- c(c.megagol,count.megagol)
 }
 
+
+df.countexcesses <- data.frame(thresholds=thresholds,observed=c.candhis,modeled=c.megagol) 
 result <- data.frame(thresholds=thresholds,observed=res.candhis,modeled=res.megagol) 
 result.melt <- melt(result,id.vars = 'thresholds')
 
-ggplot(result.melt, aes(x=thresholds,y=value,color=variable,shape=variable)) + 
-  theme_tufte() + 
-  xlab("Thresholds (%)") +
+# Plot
+p <- ggplot(result.melt, aes(x=thresholds,y=value,color=variable,shape=variable)) + 
+  theme_tufte(base_size = 14) + 
+  scale_color_hue(name="Data source") +
+  scale_shape(name="Data source") + 
+  # theme(text = element_text(size=14)) +
+  xlab("Threshold (%)") +
   ylab("Joint Survival Probability") +
+  # scale_y_log10() +
+  ggtitle("Margins thresholds without transfo") +
+  geom_line(linetype=3) + 
   geom_point()
 
+p
+df.countexcesses
