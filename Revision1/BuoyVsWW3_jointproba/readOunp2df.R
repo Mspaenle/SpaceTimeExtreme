@@ -77,7 +77,7 @@ mapStationFileCode <- function (station) {
 }
 
 mapStationName <- function (stationName) {
-  switch(station,
+  switch(stationName,
          "Nice Large" = "61001",
          "Lion" = "61002",
          "Porquerolles" = "61004",
