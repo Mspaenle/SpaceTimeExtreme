@@ -6,15 +6,14 @@ source(file = "readCandhis.R")
 source(file = "readOunp2df.R")
 
 ## Set flags to avoid un-necessary computations
-HAS_READ_CANDHIS <- FALSE
-HAS_READ_MEGAGOL <- FALSE
+HAS_READ_CANDHIS <- TRUE
+HAS_READ_MEGAGOL <- TRUE
 
 ## Define hs limits (to avoid outliers from measurement)
 hslim <- c(0,15)
 ## Stations to compare (must be in "Espiguette","Leucate","Sete","Banyuls")
-stations <- c("Espiguette","Leucate","Sete","Banyuls")
-## Define thresholds (proba forme)
-#thresholds <- c(0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,0.99)
+stations <- c("Espiguette","Leucate","Leucate","Banyuls")
+## Define thresholds
 thresholds <- seq(from = 0.5, to = 0.95, by = 0.05)
 
 ## Construct dataframe from observed data (candhis)
@@ -69,8 +68,19 @@ if (!HAS_READ_MEGAGOL) {
 ## Merge different sources dataframes
 df.hs.mrg <- merge(df.candhis, df.megagol, by = 'date', suffixes = c('-observed','-modeled')) %>% 
   .[,! colnames(.) %in% c("date")]
-df.thresholds.mrg <- merge(emp.thresholds.candhis, emp.thresholds.megagol, 
+df.thresholds.mrg <- merge(emp.thresholds.candhis, emp.thresholds.megagol,
                            by = 'thresholds', suffixes = c('-candhis','-megagol'))
+
+## Computation of thresholds after merging datasets
+for (station in stations) {
+  col.observed <- paste(station,"observed",sep = '-')
+  emp.thresholds.candhis[colnames(emp.thresholds.candhis) %in% station] <- quantile(df.hs.mrg[colnames(df.hs.mrg) %in% col.observed], 
+                                                                                    probs = thresholds, na.rm = TRUE)
+  
+  col.modeled <- paste(station,"modeled",sep = '-')
+  emp.thresholds.megagol[colnames(emp.thresholds.megagol) %in% station] <- quantile(df.hs.mrg[colnames(df.hs.mrg) %in% col.modeled], 
+                                                                                    probs = thresholds, na.rm = TRUE)
+}
 
 ## For any thresholds compute joint proba for each source 
 res.megagol <- res.candhis <- NULL
