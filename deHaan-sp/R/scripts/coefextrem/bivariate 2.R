@@ -1,9 +1,13 @@
 ### EXTREMAL COEFFICIENT BETWEEN ################
 # {Y^(1)_s , Y^(2)_s}                           #
 #################################################
-infile <- "../../../inputs/ww3/megagol2015a-gol.nc"
-siteInfoFile <- "../../../inputs/sitesInfo/sites-info.dat"
-sites.xyz <- "../../../inputs/sitesInfo/sites.xyz.dat"
+infile <- "inputs/ww3/megagol2015a-gol.nc"
+infile <- "inputs/ww3/megagol2015-a-gol.nc"
+siteInfoFile <- "inputs/sitesInfo/sites-info.dat"
+sites.xy <- "inputs/sitesInfo/sites.xyz.dat"
+sitedepthfile <- "inputs/sitesInfo/sites-infos-depth-cleaned.txt"
+sites.xyz <- "inputs/sitesInfo/sites-infos-depth.txt"
+infile <- "inputs/ww3/megagol2015a-gol-cleaned3.nc"
 
 # read sites geometry Info file and return a dataframe
 getSiteGeomInfo <- function (file) {
@@ -13,9 +17,15 @@ getSiteGeomInfo <- function (file) {
   return (data.out)
 }
 
-# read sites xyz file
-getSitesXYZ <- function (file) {
-  return (read.csv2(file = file, header = FALSE))
+# read sites xy file
+getSitesXY <- function (file) {
+  #return (read.csv2(file = file, header = FALSE)$V1)
+  return (as.numeric(as.character(read.csv2(file = file, header = FALSE,sep = " ")$V4)))
+}
+
+# read depth sites from a xyz file and a list of sites
+getDepth <- function (file,sites) {
+  return (as.numeric(as.character(read.csv2(file = file, header = FALSE,sep = " ")$V3)))
 }
 
 # read time from ounf file to a POSIXct vector 
@@ -62,7 +72,7 @@ theta.estimator.censored <- function (df.frech, sites, quantile, timegap, year) 
   
   df <- NULL
   for (i in sites) {
-    print(paste0("site: ",n,"/",length(sites)))
+    
     X <- df.frech[ , (names(df.frech) %in% paste0(i,".hs"))]
     U.x <- as.numeric(quantile(X,quantile))
     
@@ -103,19 +113,33 @@ plotThetaBivariate <- function (df) {
   require(ggplot2)
   require(reshape2)
   require(Hmisc)
+  require(msir)
   
-  p <- ggplot(data = df, mapping = aes(x=indexsite,y=theta)) +
+  p <- ggplot(data = df, mapping = aes(x=-(depth-2),y=theta)) +
     theme(panel.background = element_rect(fill="white")) +
     theme_bw() +
     theme(text = element_text(size=20)) +
     theme(legend.background = element_rect(fill = "#ffffffaa", colour = NA)) +
     ggtitle(paste0("Extremal Coefficient (Hs/Tp)")) +
     ylab(expression("Extremal Coefficient":hat(theta)(Hs,Tp))) + 
-    xlab("Site Index") +
+    xlab("Depth (m)") +
     geom_point(alpha=0.1,shape=4) +
-    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125)) +
-    stat_summary(fun.y="median",geom="point",colour="black",size=3)
-#    + geom_smooth(aes(group=1),color = "black", method="loess", size=1)
+    scale_y_continuous(breaks=seq(1,2,by=0.25),minor_breaks=seq(1,2,by=0.125))
+    #geom_smooth(aes(group=1),color = "black", method="loess", size=1)
+  
+  fit <- loess.sd(y = df$theta, x=-((df$depth)-2), nsigma = 1.96)
+  df.prediction<-data.frame(lag=fit$x)
+  df.prediction$fit<-fit$y
+  df.prediction$upper <- fit$upper
+  df.prediction$lower <- fit$lower
+  df.prediction$theta <- fit$y
+  
+  p <- p + geom_line(data=df.prediction, mapping=aes(x=lag,y=fit),alpha=1,size=1,colour="black") +
+    geom_ribbon(data=df.prediction, aes(x=lag, ymax=upper, ymin=lower), fill="lightgrey", alpha=.3) +
+    geom_line(data=df.prediction,aes(x=lag,y = upper), colour = 'grey') +
+    geom_line(data=df.prediction,aes(x=lag,y = lower), colour = 'grey')
+  
+  p <- p + stat_summary(fun.y="median",geom="point",colour="black",size=3) 
   
   print(p)
 }
@@ -127,18 +151,19 @@ plotThetaBivariate <- function (df) {
 
 variables<-c("hs","tp")
 year<-2012
-# years <- seq(1961,2012)
-years <- seq(2011,2012)
+years <- seq(1961,2012)
+#years <- seq(2012,2012)
 n<-0
+quantile<-0.95
+timegap<-1
 
-isDataProcessed<-FALSE
+isDataProcessed<-TRUE
 if (!isDataProcessed) {
   res.total<-NULL
   for (year in years) {
     print(paste('Processed',n,'out of',length(years),' years'))
     
-    data.siteGeomInfo <- getSiteGeomInfo(file = siteInfoFile)
-    sites <- getSitesXYZ(file = sites.xyz)$V1
+    sites <- getSitesXY(file = sites.xyz)
     
     data.hs <- extractData(file = infile, sites = sites, year = year, var = "hs")
     drop<-c("obs"); data.hs <- data.hs[,!(names(data.hs) %in% drop )]
@@ -148,25 +173,17 @@ if (!isDataProcessed) {
     
     data <- merge(data.hs,data.tp, by="time", suffixes = c(".hs",".tp"))
     data <- na.omit(data) # we remove data for wich there are some NA due to physical modelling constraint
-    #   data[is.na(data)] <- 0 # Be carefull, change distrib
-    
     data.frech <- toFrech(data)  
     
     # check NA values with :  data[is.na(data$`395.tp`),]
-    
-    
-    quantile<-0.95
-    timegap<-1
     res <- theta.estimator.censored(data.frech,sites,quantile,timegap,year)
-    
+
     res.total<-rbind(res.total,res)
     n<-n+1
   }
   print(paste('Processed',n,'out of',length(years),' years'))
 }
 
-nbsites<-137
-res.total$indexsite<-rep(seq(1:137),52)
+res.total$depth<-getDepth(sites.xyz,sites)
+
 plotThetaBivariate(res.total)
-
-
